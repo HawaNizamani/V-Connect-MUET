@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "809315726563",
+    "project_id": "v-connect-muet-cf44b",
+    "storage_bucket": "v-connect-muet-cf44b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:809315726563:android:a6ee741c7792b0e0d441d6",
+        "android_client_info": {
+          "package_name": "com.example.v_connect_muet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhgH8KMDnx6YQeqGyBTXitIN6qXyQwX4k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
