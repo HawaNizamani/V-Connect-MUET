@@ -1,4 +1,8 @@
+import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:v_connect_muet/constants.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,145 +13,224 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  SignIn() async {
+    await FirebaseAuth.instance.signInWithEmailAndPassword(email: _emailController.text, password: _passwordController.text);
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF5B3536), // Top Background Color
-      body: Column(
+      backgroundColor: bgColor,
+      body: Stack(
         children: [
-          // Top Section - Header
-          Container(
-            height: MediaQuery.of(context).size.height * 0.4,
-            width: double.infinity,
-            color: const Color(0xFF5B3536),
-            alignment: Alignment.center,
-            child: const Text(
-              'Login',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Segoe UI',
-              ),
+          Positioned.fill(
+            child: Image.asset('assets/images/123_jpg', fit: BoxFit.cover),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+              child: Container(color: const Color.fromARGB(30, 0, 0, 0)),
             ),
           ),
-
-          // Bottom Section - Form
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
                 ),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Email Field
-                    TextFormField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter Email',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA38787)),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Password Field
-                    TextFormField(
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFA38787)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: const Color(0xFFA38787),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Login Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA38787),
-                          foregroundColor: const Color(0xFF5B3536),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/profile');
-                        },
-                        child: const Text('Login'),
-                      ),
-                    ),
-
-
-                    const SizedBox(height: 16),
-
-                    // Forgot Password
-                    const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Signup Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA38787),
-                          foregroundColor: const Color(0xFF5B3536),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text('Signup'),
-                      ),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(100, 173, 216, 255),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.graduationCap,
+                            color: Color.fromARGB(255, 38, 141, 24),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "V-Connect MUET",
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: const Color.fromARGB(255, 0, 13, 48),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Welcome to Volunteer Connect",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Confirm identity to proceed.",
+                        style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                      ),
+                      const SizedBox(height: 24),
+                      buildInputField(
+                        controller: _emailController,
+                        hint: "Email Address",
+                        icon: LucideIcons.mail,
+                      ),
+                      const SizedBox(height: 16),
+                      buildInputField(
+                        controller: _passwordController,
+                        hint: "Password",
+                        icon: LucideIcons.lock,
+                        obscure: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? LucideIcons.eyeOff
+                                : LucideIcons.eye,
+                            color: accentColor,
+                          ),
+                          onPressed: () {
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Forgot password?",
+                          style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              0,
+                              13,
+                              48,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: (()=>SignIn()),
+                          // {
+                          //   if (_formKey.currentState!.validate()) {
+                          //     Navigator.pushNamed(
+                          //       context,
+                          //       '/profile_screen',
+                          //     );
+                          //   }
+                          // },
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Don't have an account? ",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap:
+                                () => Navigator.pushNamed(
+                                  context,
+                                  '/signup_screen',
+                                ),
+                            child: const Text(
+                              "Sign up here",
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 38, 141, 24),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget buildInputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      style: const TextStyle(color: textColor),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: textHintColor),
+        filled: true,
+        fillColor: inputFillColor,
+        prefixIcon: Icon(icon, color: accentColor),
+        suffixIcon: suffixIcon,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      validator:
+          (value) => value == null || value.isEmpty ? 'Enter $hint' : null,
     );
   }
 }

@@ -1,17 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
-import 'create_profile_screen.dart';
-import 'profile_screen.dart';
-import 'available_opportunities_screen.dart';
-import 'chatbot_screen.dart';
-import 'search_screen.dart';
-import 'notification_screen.dart';
-import 'settings_screen.dart';
-import 'create_opportunity_screen.dart';
-import 'organization_screen.dart';
+import 'package:v_connect_muet/create_profile_organization_screen.dart';
+import 'package:v_connect_muet/create_profile_student_screen.dart';
+import 'package:v_connect_muet/login_screen.dart';
+import 'package:v_connect_muet/profile_screen.dart';
+import 'package:v_connect_muet/signup_screen.dart';
+import 'package:get/get.dart';
+import 'package:v_connect_muet/wrapper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -20,7 +19,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'V-Connect MUET',
       theme: ThemeData(
@@ -29,19 +28,13 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // Set initial screen to Signup
-      home: const SignupScreen(),
+      home: const Wrapper(),
       routes: {
-        '/signup': (context) => const SignupScreen(),
-        '/create-profile': (context) => const CreateProfileScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/opportunities': (context) => const AvailableOpportunitiesScreen(),
-        '/chatbot': (context) => const ChatbotScreen(),
-        '/search': (context) => const SearchScreen(),
-        '/notifications': (context) => const NotificationScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/create-opportunity': (context) => const CreateOpportunityScreen(),
-        '/organizations': (context) => const OrganizationScreen(),
+        '/signup_screen': (context) => SignupScreen(),
+        '/login_screen': (context) => LoginScreen(),
+        '/create_profile_student': (context) => CreateProfileStudentScreen(),
+        '/create_profile_organization': (context) => CreateProfileOrganizationScreen(),
+        '/profile_screen' : (context) => ProfileScreen(name: 'name', rollNo: 'rollNo', department: 'department', skills: 'skills')
       },
     );
   }

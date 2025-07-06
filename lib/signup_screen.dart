@@ -1,4 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:v_connect_muet/constants.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -10,173 +14,430 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _rememberMe = false;
+  String _selectedTab = 'Student';
+  bool _isOtherSelected = false;
+
+  final _formKey = GlobalKey<FormState>();
+
+  final _studentNameController = TextEditingController();
+  final _studentRollController = TextEditingController();
+  final _studentEmailController = TextEditingController();
+  final _studentPasswordController = TextEditingController();
+  final _studentConfirmPasswordController = TextEditingController();
+
+  final _orgNameController = TextEditingController();
+  final _orgEmailController = TextEditingController();
+  final _orgPasswordController = TextEditingController();
+  final _orgConfirmPasswordController = TextEditingController();
+  final _orgTypeController = TextEditingController();
+
+
+  final List<String> _orgTypes = [
+    "Academic",
+    "Social",
+    "Society",
+    "Social Work",
+    "Sports",
+    "Tech",
+    "Other",
+  ];
+
+  @override
+  void dispose() {
+    _studentNameController.dispose();
+    _studentRollController.dispose();
+    _studentEmailController.dispose();
+    _studentPasswordController.dispose();
+    _studentConfirmPasswordController.dispose();
+    _orgNameController.dispose();
+    _orgEmailController.dispose();
+    _orgPasswordController.dispose();
+    _orgConfirmPasswordController.dispose();
+    _orgTypeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF5B3536),
-      body: Column(
+      backgroundColor: bgColor,
+      body: Stack(
         children: [
-          // Top Header
-          Container(
-            height: MediaQuery.of(context).size.height * 0.4,
-            width: double.infinity,
-            color: const Color(0xFF5B3536),
-            alignment: Alignment.center,
-            child: const Text(
-              'Signup',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Segoe UI',
-              ),
+          Positioned.fill(
+            child: Image.asset('assets/images/123_jpg', fit: BoxFit.cover),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+              child: Container(color: const Color.fromARGB(30, 0, 0, 0)),
             ),
           ),
-
-          // Bottom Form
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Name
-                    TextFormField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter Full Name',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFA38787)),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Email
-                    TextFormField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter Email',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA38787)),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Password
-                    TextFormField(
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFA38787)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: const Color(0xFFA38787),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Confirm Password
-                    TextFormField(
-                      obscureText: _obscureConfirmPassword,
-                      decoration: InputDecoration(
-                        hintText: 'Confirm Password',
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFA38787)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                            color: const Color(0xFFA38787),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        hintStyle: const TextStyle(color: Color(0xFF5B3536)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Signup Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA38787),
-                          foregroundColor: const Color(0xFF5B3536),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/create-profile');
-                        },
-                        child: const Text('Signup'),
-                      ),
-
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Already have account
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Already have an account? Login',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(100, 173, 216, 255),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.graduationCap,
+                            color: Color.fromARGB(255, 38, 141, 24),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "V-Connect MUET",
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Color.fromARGB(255, 0, 13, 48),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Registration",
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Start your journey with Volunteer Connect",
+                        style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Toggle Tabs
+                      Container(
+                        decoration: BoxDecoration(
+                          color: inputFillColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            buildTabButton('Student'),
+                            buildTabButton('Organization'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Dynamic Form Content
+                      if (_selectedTab == 'Student') ...[
+                        buildTextField(
+                          "Student Name",
+                          LucideIcons.user,
+                          _studentNameController,
+                        ),
+                        buildTextField(
+                          "Roll Number",
+                          LucideIcons.badgeInfo,
+                          _studentRollController,
+                        ),
+                        buildTextField(
+                          "Email",
+                          LucideIcons.mail,
+                          _studentEmailController,
+                        ),
+                        buildPasswordField(
+                          "Password",
+                          _studentPasswordController,
+                          true,
+                        ),
+                        buildPasswordField(
+                          "Confirm Password",
+                          _studentConfirmPasswordController,
+                          false,
+                        ),
+                      ] else ...[
+                        buildTextField(
+                          "Organization Name",
+                          LucideIcons.building,
+                          _orgNameController,
+                        ),
+                        buildOrgTypeDropdownField(),
+                        buildTextField(
+                          "Email",
+                          LucideIcons.mail,
+                          _orgEmailController,
+                        ),
+                        buildPasswordField(
+                          "Password",
+                          _orgPasswordController,
+                          true,
+                        ),
+                        buildPasswordField(
+                          "Confirm Password",
+                          _orgConfirmPasswordController,
+                          false,
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            onChanged:
+                                (value) => setState(() => _rememberMe = value!),
+                          ),
+                          const Text(
+                            "Remember me",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Submit Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              0,
+                              13,
+                              48,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              Navigator.pushNamed(
+                                context,
+                                '/create_profile_${_selectedTab.toLowerCase()}',
+                              );
+                            }
+                          },
+                          child: const Text(
+                            "Create Account",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Already have account link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Already have an account? ",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap:
+                                () => Navigator.pushNamed(
+                                  context,
+                                  '/login_screen',
+                                ),
+                            child: const Text(
+                              "Login Here",
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 38, 141, 24),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget buildTabButton(String tabName) {
+    final bool isSelected = _selectedTab == tabName;
+    return Expanded(
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor:
+              isSelected
+                  ? tabSelectedColor.withOpacity(0.2)
+                  : Colors.transparent,
+        ),
+        onPressed: () => setState(() => _selectedTab = tabName),
+        child: Text(
+          tabName,
+          style: TextStyle(
+            color: isSelected ? tabSelectedColor : tabUnselectedColor,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildTextField(
+    String hint,
+    IconData icon,
+    TextEditingController controller,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: textColor),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: textHintColor),
+          filled: true,
+          fillColor: inputFillColor,
+          prefixIcon: Icon(icon, color: accentColor),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        validator:
+            (value) => value == null || value.isEmpty ? "Enter $hint" : null,
+      ),
+    );
+  }
+
+  Widget buildPasswordField(
+    String hint,
+    TextEditingController controller,
+    bool isMain,
+  ) {
+    final obscure = isMain ? _obscurePassword : _obscureConfirmPassword;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        style: const TextStyle(color: textColor),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: textHintColor),
+          filled: true,
+          fillColor: inputFillColor,
+          prefixIcon: const Icon(LucideIcons.lock, color: accentColor),
+          suffixIcon: IconButton(
+            icon: Icon(
+              obscure ? LucideIcons.eyeOff : LucideIcons.eye,
+              color: accentColor,
+            ),
+            onPressed:
+                () => setState(() {
+                  if (isMain) {
+                    _obscurePassword = !_obscurePassword;
+                  } else {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  }
+                }),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        validator:
+            (value) => value == null || value.isEmpty ? "Enter $hint" : null,
+      ),
+    );
+  }
+
+  Widget buildOrgTypeDropdownField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: _orgTypeController,
+        readOnly: !_isOtherSelected,
+        onTap: () async {
+          if (!_isOtherSelected) {
+            final value = await showDialog<String>(
+              context: context,
+              builder:
+                  (context) => SimpleDialog(
+                    title: const Text('Select Organization Type'),
+                    children:
+                        _orgTypes.map((type) {
+                          return SimpleDialogOption(
+                            onPressed: () => Navigator.pop(context, type),
+                            child: Text(type),
+                          );
+                        }).toList(),
+                  ),
+            );
+            if (value != null) {
+              setState(() {
+                if (value == 'Other') {
+                  _isOtherSelected = true;
+                  _orgTypeController.clear();
+                } else {
+                  _orgTypeController.text = value;
+                  _isOtherSelected = false;
+                }
+              });
+            }
+          }
+        },
+        style: const TextStyle(color: textColor),
+        decoration: InputDecoration(
+          hintText: "Organization Type/Domain",
+          hintStyle: const TextStyle(color: textHintColor),
+          filled: true,
+          fillColor: inputFillColor,
+          prefixIcon: const Icon(LucideIcons.aperture, color: accentColor),
+          suffixIcon: const Icon(LucideIcons.chevronDown, color: accentColor),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        validator:
+            (value) =>
+                value == null || value.isEmpty
+                    ? "Please select or enter organization type"
+                    : null,
       ),
     );
   }

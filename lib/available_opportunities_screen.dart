@@ -20,8 +20,8 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
 
   @override
   void initState() {
-    _tabController = TabController(length: 2, vsync: this);
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   void toggleFavorite(int index) {
@@ -35,13 +35,21 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
   }
 
   void _onNavTap(int index) {
-    if (index == 1) return; // Already on AvailableOpportunitiesScreen
+    if (index == 1) return; // Already on this screen
 
     switch (index) {
       case 0:
+      // Replace dummy info with actual user data if needed
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          MaterialPageRoute(
+            builder: (_) => const ProfileScreen(
+              name: "Hawa Nizamani",
+              rollNo: "21BSCS027",
+              department: "Computer Science",
+              skills: "Flutter Developer",
+            ),
+          ),
         );
         break;
       case 2:
@@ -61,28 +69,27 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF5D3A3A);
-    const Color secondaryColor = Color(0xFFF5F3F3);
+    const Color primaryColor = Color(0xFF0A1D56);
+    const Color backgroundColor = Color(0xFFF5F9FF);
 
     return Scaffold(
-      backgroundColor: secondaryColor,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         backgroundColor: primaryColor,
         elevation: 0,
-        title: const Text('Available Opportunities', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Available Opportunities',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              // TODO: Implement search
-            },
+            onPressed: () {},
             splashRadius: 24,
           ),
           IconButton(
             icon: const Icon(Icons.filter_list, color: Colors.white),
-            onPressed: () {
-              // TODO: Implement filter
-            },
+            onPressed: () {},
             splashRadius: 24,
           ),
         ],
@@ -90,8 +97,8 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
           controller: _tabController,
           indicatorColor: Colors.white,
           tabs: const [
-            Tab(text: 'In muet'),
-            Tab(text: 'Near me'),
+            Tab(text: 'In MUET'),
+            Tab(text: 'Near Me'),
           ],
         ),
       ),
@@ -124,6 +131,7 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
           child: Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.symmetric(vertical: 8),
+            elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
@@ -139,22 +147,31 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text('Be the Change',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text('How youth can thrive in Social Movements'),
-                            SizedBox(height: 4),
+                          children: [
+                            const Text(
+                              'Be the Change',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const Text('How youth can thrive in Social Movements'),
+                            const SizedBox(height: 4),
                             Row(
-                              children: [
+                              children: const [
                                 Icon(Icons.location_on, size: 16, color: Colors.grey),
                                 SizedBox(width: 4),
-                                Text('Software department MUET', style: TextStyle(fontSize: 12)),
+                                Text('Software department MUET',
+                                    style: TextStyle(fontSize: 12)),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.favorite_border, color: Colors.grey),
+                      IconButton(
+                        icon: Icon(
+                          favorites.contains(index) ? Icons.favorite : Icons.favorite_border,
+                          color: favorites.contains(index) ? Colors.red : Colors.grey,
+                        ),
+                        onPressed: () => toggleFavorite(index),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
