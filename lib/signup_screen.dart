@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:v_connect_muet/constants.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:v_connect_muet/wrapper.dart';
 
@@ -35,9 +36,56 @@ class _SignupScreenState extends State<SignupScreen> {
   final _orgTypeController = TextEditingController();
 
   signup() async {
-    await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _orgEmailController.text, password: _orgPasswordController.text);
-    Get.offAll(Wrapper());
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedTab == 'Student') {
+      if (_studentPasswordController.text != _studentConfirmPasswordController.text) {
+        Get.snackbar("Error", "Passwords do not match", backgroundColor: Colors.red, colorText: Colors.white);
+        return;
+      }
+    } else {
+      if (_orgPasswordController.text != _orgConfirmPasswordController.text) {
+        Get.snackbar("Error", "Passwords do not match", backgroundColor: Colors.red, colorText: Colors.white);
+        return;
+      }
+    }
+
+    try {
+      // Create user using Firebase Auth
+      UserCredential userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _selectedTab == 'Student'
+            ? _studentEmailController.text.trim()
+            : _orgEmailController.text.trim(),
+        password: _selectedTab == 'Student'
+            ? _studentPasswordController.text.trim()
+            : _orgPasswordController.text.trim(),
+      );
+
+      // Save extra data to Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
+        'role': _selectedTab,
+        'email': _selectedTab == 'Student'
+            ? _studentEmailController.text.trim()
+            : _orgEmailController.text.trim(),
+        'name': _selectedTab == 'Student'
+            ? _studentNameController.text.trim()
+            : _orgNameController.text.trim(),
+        if (_selectedTab == 'Student')
+          'rollNumber': _studentRollController.text.trim(),
+        if (_selectedTab == 'Organization')
+          'orgType': _orgTypeController.text.trim(),
+        'createdAt': Timestamp.now(),
+      });
+
+      Get.snackbar("Success", "Account created successfully!", backgroundColor: Colors.green, colorText: Colors.white);
+      Get.offAll(() => const Wrapper());
+    } on FirebaseAuthException catch (e) {
+      Get.snackbar("Signup Failed", e.message ?? "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar("Error", e.toString(), backgroundColor: Colors.red, colorText: Colors.white);
+    }
   }
+
 
   final List<String> _orgTypes = [
     "Academic",
