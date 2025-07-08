@@ -7,6 +7,7 @@ import 'package:v_connect_muet/profile_screen.dart';
 import 'package:v_connect_muet/signup_screen.dart';
 import 'package:get/get.dart';
 import 'package:v_connect_muet/wrapper.dart';
+import 'package:v_connect_muet/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +29,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // Set initial screen to Signup
-      home: const Wrapper(),
+      home: const SplashScreen(),
       routes: {
+        '/wrapper' : (context) => Wrapper(),
         '/signup_screen': (context) => SignupScreen(),
         '/login_screen': (context) => LoginScreen(),
         '/create_profile_student_screen': (context) => CreateProfileStudentScreen(),
