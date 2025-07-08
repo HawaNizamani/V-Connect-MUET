@@ -78,7 +78,12 @@ class _SignupScreenState extends State<SignupScreen> {
       });
 
       Get.snackbar("Success", "Account created successfully!", backgroundColor: Colors.green, colorText: Colors.white);
-      Get.offAll(() => const Wrapper());
+
+      if (_selectedTab == 'Student') {
+        Get.offAllNamed('/create_profile_student_screen');
+      } else {
+        Get.offAllNamed('/create_profile_organization_screen');
+      }
     } on FirebaseAuthException catch (e) {
       Get.snackbar("Signup Failed", e.message ?? "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
     } catch (e) {

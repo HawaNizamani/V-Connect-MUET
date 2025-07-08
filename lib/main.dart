@@ -32,8 +32,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/signup_screen': (context) => SignupScreen(),
         '/login_screen': (context) => LoginScreen(),
-        '/create_profile_student': (context) => CreateProfileStudentScreen(),
-        '/create_profile_organization': (context) => CreateProfileOrganizationScreen(),
+        '/create_profile_student_screen': (context) => CreateProfileStudentScreen(),
+        '/create_profile_organization_screen': (context) => CreateProfileOrganizationScreen(),
         '/profile_screen' : (context) => ProfileScreen(name: 'name', rollNo: 'rollNo', department: 'department', skills: 'skills')
       },
     );
