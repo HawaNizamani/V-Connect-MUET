@@ -40,17 +40,6 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
     switch (index) {
       case 0:
       // Replace dummy info with actual user data if needed
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const ProfileScreen(
-              name: "name",
-              rollNo: "ro",
-              department: "Computer Science",
-              skills: "Flutter Developer",
-            ),
-          ),
-        );
         break;
       case 2:
         Navigator.push(

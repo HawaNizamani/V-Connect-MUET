@@ -7,27 +7,31 @@ import 'custom_bottom_navbar.dart';
 import 'available_opportunities_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class ProfileScreen extends StatefulWidget {
-
-  final String name;
-  final String rollNo;
-  final String department;
-  final String skills;
-
-  const ProfileScreen({
-    super.key,
-    required this.name,
-    required this.rollNo,
-    required this.department,
-    required this.skills,
-  });
+  final Map<String, dynamic> userData;
+  const ProfileScreen({super.key, required this.userData});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+
 class _ProfileScreenState extends State<ProfileScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    userData = widget.userData;
+    isLoading = false;
+  }
+
+  late Map<String, dynamic> userData;
+  bool isLoading = true;
+
+
 
   final user = FirebaseAuth.instance.currentUser;
 
@@ -109,17 +113,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _onNavBarTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProfileScreen(
-              name: widget.name,
-              rollNo: widget.rollNo,
-              department: widget.department,
-              skills: widget.skills,
-            ),
-          ),
-        );
         break;
       case 1:
         Navigator.push(
@@ -147,12 +140,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const Color primaryColor = Color(0xFF0A1D56);
     const Color glassColor = Colors.white30;
 
+    if (isLoading || userData == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      extendBodyBehindAppBar: true,
+    extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: primaryColor.withOpacity(0.85),
         elevation: 0,
-        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        title: const Text('Student Profile', style: TextStyle(color: Colors.white)),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16.0),
@@ -210,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.name,
+                                    userData?['name'] ?? '',
                                     style: const TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
@@ -218,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${widget.department}\n${widget.rollNo}\n${widget.skills}',
+                                    '${userData?['department'] ?? ''}\n${userData?['rollNumber'] ?? ''}\n${userData?['skills'] ?? ''}',
                                     style: const TextStyle(color: Colors.black87),
                                   ),
                                   const SizedBox(height: 8),

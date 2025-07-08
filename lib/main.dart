@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         '/login_screen': (context) => LoginScreen(),
         '/create_profile_student_screen': (context) => CreateProfileStudentScreen(),
         '/create_profile_organization_screen': (context) => CreateProfileOrganizationScreen(),
-        '/profile_screen' : (context) => ProfileScreen(name: 'name', rollNo: 'rollNo', department: 'department', skills: 'skills')
+        //'/profile_screen' : (context) => ProfileScreen(userData: userData)
       },
     );
   }

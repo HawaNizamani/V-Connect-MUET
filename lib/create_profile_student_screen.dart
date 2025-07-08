@@ -1,5 +1,8 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:v_connect_muet/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 
 class CreateProfileStudentScreen extends StatefulWidget {
@@ -92,31 +95,36 @@ class _CreateProfileStudentScreenState
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProfileScreen(
-                                    name: nameController.text.trim(),
-                                    rollNo: rollController.text.trim(),
-                                    department: deptController.text.trim(),
-                                    skills: skillsController.text.trim(),
-                                  ),
-                                ),
-                              );
+                            onPressed: () async {
+                              final user = FirebaseAuth.instance.currentUser;
+                              if (user != null) {
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .set({
+                                  'uid': user.uid,
+                                  'role': 'student',
+                                  'name': nameController.text.trim(),
+                                  'rollNumber': rollController.text.trim(),
+                                  'department': deptController.text.trim(),
+                                  'skills': skillsController.text.trim(),
+                                });
+
+                                // After saving, navigate to login
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('User not logged in')),
+                                );
+                              }
                             },
                             child: const Text(
                               "Create Profile",
                               style: TextStyle(fontSize: 16),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            "Back",
-                            style: TextStyle(color: greenAccent),
                           ),
                         ),
                       ],

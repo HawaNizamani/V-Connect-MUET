@@ -85,7 +85,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Get.offAllNamed('/create_profile_organization_screen');
       }
     } on FirebaseAuthException catch (e) {
-      Get.snackbar("Signup Failed", e.message ?? "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar("Signup Failed", "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
     } catch (e) {
       Get.snackbar("Error", e.toString(), backgroundColor: Colors.red, colorText: Colors.white);
     }
