@@ -30,6 +30,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
 
   final user = FirebaseAuth.instance.currentUser;
+
+  signout() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   final List<Map<String, String>> experiences = [];
   File? _profileImage;
 
@@ -148,10 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: primaryColor.withOpacity(0.85),
         elevation: 0,
         title: const Text('Profile', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16.0),
@@ -230,6 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: primaryColor,
                                           side: const BorderSide(color: primaryColor),
+                                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -240,7 +242,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: primaryColor,
                                           side: const BorderSide(color: primaryColor),
+                                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14)
                                         ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      IconButton(
+                                        alignment: Alignment.bottomRight,
+                                        icon: const Icon(Icons.logout, color: primaryColor),
+                                        tooltip: 'Logout',
+                                        onPressed: (()=>signout()),
                                       ),
                                     ],
                                   )

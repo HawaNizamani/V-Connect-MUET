@@ -44,8 +44,8 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
           context,
           MaterialPageRoute(
             builder: (_) => const ProfileScreen(
-              name: "Hawa Nizamani",
-              rollNo: "21BSCS027",
+              name: "name",
+              rollNo: "ro",
               department: "Computer Science",
               skills: "Flutter Developer",
             ),

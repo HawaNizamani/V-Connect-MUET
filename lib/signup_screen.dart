@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:v_connect_muet/constants.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
+import 'package:v_connect_muet/wrapper.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -32,6 +34,10 @@ class _SignupScreenState extends State<SignupScreen> {
   final _orgConfirmPasswordController = TextEditingController();
   final _orgTypeController = TextEditingController();
 
+  signup() async {
+    await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _orgEmailController.text, password: _orgPasswordController.text);
+    Get.offAll(Wrapper());
+  }
 
   final List<String> _orgTypes = [
     "Academic",
@@ -228,14 +234,15 @@ class _SignupScreenState extends State<SignupScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              Navigator.pushNamed(
-                                context,
-                                '/create_profile_${_selectedTab.toLowerCase()}',
-                              );
-                            }
-                          },
+                          onPressed: (()=>signup()),
+                          // {
+                          //   if (_formKey.currentState!.validate()) {
+                          //     Navigator.pushNamed(
+                          //       context,
+                          //       '/create_profile_${_selectedTab.toLowerCase()}',
+                          //     );
+                          //   }
+                          // },
                           child: const Text(
                             "Create Account",
                             style: TextStyle(color: Colors.white),

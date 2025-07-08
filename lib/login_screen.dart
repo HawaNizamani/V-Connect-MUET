@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:v_connect_muet/constants.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:get/get.dart';
+import 'package:v_connect_muet/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -80,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             "V-Connect MUET",
                             style: TextStyle(
                               fontSize: 20,
-                              color: const Color.fromARGB(255, 0, 13, 48),
+                              color: Color.fromARGB(255, 0, 13, 48),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -177,10 +179,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           GestureDetector(
                             onTap:
-                                () => Navigator.pushNamed(
-                                  context,
-                                  '/signup_screen',
-                                ),
+                          // () => print("Signup"),
+                          () => Get.to(SignupScreen()),
+                            //     () => Navigator.pushNamed(
+                            //   context,
+                            //   '/signup_screen',
+                            // ),
                             child: const Text(
                               "Sign up here",
                               style: TextStyle(
