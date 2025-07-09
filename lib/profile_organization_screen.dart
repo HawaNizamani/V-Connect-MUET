@@ -7,19 +7,22 @@ import 'custom_bottom_navbar.dart';
 import 'available_opportunities_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-
-class ProfileScreen extends StatefulWidget {
+class ProfileOrganizationScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
-  const ProfileScreen({super.key, required this.userData});
+  const ProfileOrganizationScreen({super.key, required this.userData});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileOrganizationScreen> createState() => _ProfileOrganizationScreenState();
 }
 
+class _ProfileOrganizationScreenState extends State<ProfileOrganizationScreen> {
+  late Map<String, dynamic> userData;
+  bool isLoading = true;
+  final user = FirebaseAuth.instance.currentUser;
 
-class _ProfileScreenState extends State<ProfileScreen> {
+  File? _profileImage;
+  final List<Map<String, String>> experiences = [];
 
   @override
   void initState() {
@@ -28,19 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     isLoading = false;
   }
 
-  late Map<String, dynamic> userData;
-  bool isLoading = true;
-
-
-
-  final user = FirebaseAuth.instance.currentUser;
-
   signout() async {
     await FirebaseAuth.instance.signOut();
   }
-
-  final List<Map<String, String>> experiences = [];
-  File? _profileImage;
 
   Future<void> _pickProfileImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -140,18 +133,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const Color primaryColor = Color(0xFF0A1D56);
     const Color glassColor = Colors.white30;
 
-    if (isLoading || userData == null) {
+    if (isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-    extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: primaryColor.withOpacity(0.85),
         elevation: 0,
-        title: const Text('Student Profile', style: TextStyle(color: Colors.white)),
+        title: const Text('Organization Profile', style: TextStyle(color: Colors.white)),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16.0),
@@ -173,7 +166,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.only(top: kToolbarHeight + 20, bottom: 80),
             child: Column(
               children: [
-                /// Profile Card with blur
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ClipRRect(
@@ -198,8 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 backgroundImage:
                                 _profileImage != null ? FileImage(_profileImage!) : null,
                                 child: _profileImage == null
-                                    ? const Icon(Icons.camera_alt,
-                                    color: primaryColor, size: 30)
+                                    ? const Icon(Icons.camera_alt, color: primaryColor, size: 30)
                                     : null,
                               ),
                             ),
@@ -209,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    userData?['name'] ?? '',
+                                    userData['organizationName'] ?? '',
                                     style: const TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
@@ -217,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${userData?['department'] ?? ''}\n${userData?['rollNumber'] ?? ''}\n${userData?['skills'] ?? ''}',
+                                    '${userData['email'] ?? ''}\n${userData['phone'] ?? ''}\n${userData['address'] ?? ''}',
                                     style: const TextStyle(color: Colors.black87),
                                   ),
                                   const SizedBox(height: 8),
@@ -230,7 +221,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: primaryColor,
                                           side: const BorderSide(color: primaryColor),
-                                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 0, horizontal: 14),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -241,15 +233,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: primaryColor,
                                           side: const BorderSide(color: primaryColor),
-                                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14)
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 0, horizontal: 14),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       IconButton(
                                         alignment: Alignment.bottomRight,
                                         icon: const Icon(Icons.logout, color: primaryColor),
                                         tooltip: 'Logout',
-                                        onPressed: (()=>signout()),
+                                        onPressed: signout,
                                       ),
                                     ],
                                   )
@@ -263,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
-                /// Experience Section (Heading + Cards) with unified glass style
+                // Experience section (unchanged)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: ClipRRect(
@@ -280,7 +273,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            /// Heading and Add button
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -320,8 +312,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-
-                            /// Experience cards
                             if (experiences.isEmpty)
                               const Text(
                                 "No experience added yet.",
@@ -352,8 +342,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         children: [
                                           Text(
                                             exp['organization'] ?? '',
-                                            style:
-                                            const TextStyle(color: Colors.white70),
+                                            style: const TextStyle(color: Colors.white70),
                                           ),
                                           Text(
                                             exp['duration'] ?? '',

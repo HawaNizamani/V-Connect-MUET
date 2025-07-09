@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:v_connect_muet/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'profile_screen.dart';
 
 class CreateProfileStudentScreen extends StatefulWidget {
   const CreateProfileStudentScreen({super.key});

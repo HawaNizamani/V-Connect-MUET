@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'custom_bottom_navbar.dart';
 import 'opportunity_detail_screen.dart';
-import 'profile_screen.dart';
 import 'search_screen.dart';
 import 'notification_screen.dart';
 

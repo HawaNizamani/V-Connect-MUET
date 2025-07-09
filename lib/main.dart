@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:v_connect_muet/create_profile_organization_screen.dart';
 import 'package:v_connect_muet/create_profile_student_screen.dart';
 import 'package:v_connect_muet/login_screen.dart';
-import 'package:v_connect_muet/profile_screen.dart';
 import 'package:v_connect_muet/signup_screen.dart';
 import 'package:get/get.dart';
 import 'package:v_connect_muet/wrapper.dart';

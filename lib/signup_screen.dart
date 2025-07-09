@@ -5,7 +5,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import 'package:v_connect_muet/wrapper.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -84,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
       } else {
         Get.offAllNamed('/create_profile_organization_screen');
       }
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       Get.snackbar("Signup Failed", "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
     } catch (e) {
       Get.snackbar("Error", e.toString(), backgroundColor: Colors.red, colorText: Colors.white);

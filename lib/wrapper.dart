@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:v_connect_muet/create_profile_organization_screen.dart';
-import 'package:v_connect_muet/create_profile_student_screen.dart';
 import 'package:v_connect_muet/login_screen.dart';
-import 'package:v_connect_muet/profile_screen.dart';
-import 'package:v_connect_muet/organization_screen.dart';
+import 'package:v_connect_muet/profile_student_screen.dart';
+import 'package:v_connect_muet/profile_organization_screen.dart';
 
 class Wrapper extends StatelessWidget {
   const Wrapper({super.key});
@@ -46,11 +44,9 @@ class Wrapper extends StatelessWidget {
 
             final role = doc['role'];
             if (role == 'student') {
-              return ProfileScreen(userData: doc.data() as Map<String, dynamic>);
+              return ProfileStudentScreen(userData: doc.data() as Map<String, dynamic>);
             } else if (role == 'organization') {
-              return Text('org');
-                // OrganizationScreen(
-                //   userData: doc.data() as Map<String, dynamic>);
+              return ProfileOrganizationScreen(userData: doc.data() as Map<String, dynamic>);
             } else {
               return const Scaffold(
                 body: Center(child: Text("Unknown role")),
