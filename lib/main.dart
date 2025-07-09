@@ -22,22 +22,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'V-Connect MUET',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        fontFamily: 'Roboto',
-        useMaterial3: true,
-      ),
-      // Set initial screen to Signup
-      home: const SplashScreen(),
-      routes: {
-        '/wrapper' : (context) => Wrapper(),
-        '/signup_screen': (context) => SignupScreen(),
-        '/login_screen': (context) => LoginScreen(),
-        '/create_profile_student_screen': (context) => CreateProfileStudentScreen(),
-        '/create_profile_organization_screen': (context) => CreateProfileOrganizationScreen(),
-        //'/profile_screen' : (context) => ProfileScreen(userData: userData)
-      },
+      initialRoute: '/',
+      getPages: [
+        GetPage(name: '/', page: () => const SplashScreen()),
+        GetPage(name: '/wrapper', page: () => const Wrapper()),
+        GetPage(name: '/login_screen', page: () => const LoginScreen()),
+        GetPage(name: '/signup_screen', page: () => const SignupScreen()),
+        GetPage(name: '/create_profile_student_screen', page: () => const CreateProfileStudentScreen()),
+        GetPage(name: '/create_profile_organization_screen', page: () => const CreateProfileOrganizationScreen()),
+        // Add others as needed
+      ],
     );
   }
 }

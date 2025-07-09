@@ -29,12 +29,13 @@ class _CreateProfileStudentScreenState
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/123_jpg'),
-                fit: BoxFit.cover,
-              ),
+          Positioned.fill(
+            child: Image.asset('assets/images/123_jpg', fit: BoxFit.cover),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+              child: Container(color: const Color.fromARGB(30, 0, 0, 0)),
             ),
           ),
           Center(

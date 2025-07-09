@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:v_connect_muet/create_profile_organization_screen.dart';
+import 'package:v_connect_muet/create_profile_student_screen.dart';
 import 'package:v_connect_muet/login_screen.dart';
-import 'package:v_connect_muet/organization_screen.dart';
 import 'package:v_connect_muet/profile_screen.dart';
+import 'package:v_connect_muet/organization_screen.dart';
 
 class Wrapper extends StatelessWidget {
   const Wrapper({super.key});
@@ -14,52 +16,48 @@ class Wrapper extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final user = authSnapshot.data;
-
-        // If user is not logged in
         if (user == null) {
           return const LoginScreen();
         }
 
-        // If user is logged in, fetch Firestore profile
         return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get(),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
 
-            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-              // Firestore document missing → force logout
-              FirebaseAuth.instance.signOut();
-              return const LoginScreen();
+            final doc = userSnapshot.data!;
+            if (!doc.exists) {
+              // Wait for document to be created instead of signing out
+              return LoginScreen();
             }
 
-            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-
-            if (userData == null || !userData.containsKey('role')) {
-              // Profile exists but is corrupted or incomplete → force logout
-              FirebaseAuth.instance.signOut();
-              return const LoginScreen();
-            }
-
-            final role = userData['role'];
-
+            final role = doc['role'];
             if (role == 'student') {
-              return ProfileScreen(userData: userData);
+              return ProfileScreen(userData: doc.data() as Map<String, dynamic>);
             } else if (role == 'organization') {
-              return const Text('org'); // Replace with OrganizationScreen if ready
+              return Text('org');
+                // OrganizationScreen(
+                //   userData: doc.data() as Map<String, dynamic>);
             } else {
-              // Unknown role → force logout
-              FirebaseAuth.instance.signOut();
-              return const LoginScreen();
+              return const Scaffold(
+                body: Center(child: Text("Unknown role")),
+              );
             }
           },
         );
-
       },
     );
   }
