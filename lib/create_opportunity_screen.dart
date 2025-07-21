@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:v_connect_muet/available_opportunities_screen.dart';
+import 'package:v_connect_muet/profile_organization_screen.dart';
+import 'package:v_connect_muet/notification_screen.dart';
+import 'package:v_connect_muet/chatbot_screen.dart';
+import 'package:v_connect_muet/create_opportunity_screen.dart';
 import 'custom_bottom_navbar.dart';
 
 class CreateOpportunityScreen extends StatefulWidget {
@@ -16,22 +24,43 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
-  int _selectedIndex = 0;
+  void _onNavTap(int index) async {
+    if (index == 1) return; // already on this screen
 
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/profile');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/opportunities');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
+        );
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/search');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+        );
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/notifications');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const NotificationScreen()),
+        );
+        break;
+      case 4:
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (!mounted) return;
+          final userData = doc.data();
+          if (userData != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileOrganizationScreen(userData: userData),
+              ),
+            );
+          }
+        }
         break;
     }
   }
@@ -148,8 +177,9 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: 1, // Opportunities tab
+        role: 'organization', // fixed role for student screen
+        onTap: _onNavTap, // overridden below
       ),
     );
   }

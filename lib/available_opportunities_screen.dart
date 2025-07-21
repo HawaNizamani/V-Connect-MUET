@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:v_connect_muet/applied_opportunities_screen.dart';
+import 'package:v_connect_muet/chatbot_screen.dart';
+import 'package:v_connect_muet/profile_student_screen.dart';
 import 'custom_bottom_navbar.dart';
 import 'opportunity_detail_screen.dart';
-import 'search_screen.dart';
 import 'notification_screen.dart';
 
 class AvailableOpportunitiesScreen extends StatefulWidget {
@@ -33,27 +37,47 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
     });
   }
 
-  void _onNavTap(int index) {
-    if (index == 1) return; // Already on this screen
+  void _onNavTap(int index) async {
+    if (index == 0) return; // already on this screen
 
     switch (index) {
-      case 0:
-      // Replace dummy info with actual user data if needed
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AppliedOpportunitiesScreen()),
+        );
         break;
       case 2:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const SearchScreen()),
+          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
         );
         break;
       case 3:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const NotificationScreen()),
         );
         break;
+      case 4:
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (!mounted) return;
+          final userData = doc.data();
+          if (userData != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileStudentScreen(userData: userData),
+              ),
+            );
+          }
+        }
+        break;
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +122,9 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
         ],
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 1,
-        onTap: _onNavTap,
+        currentIndex: 0, // Opportunities tab
+        role: 'student', // fixed role for student screen
+        onTap: _onNavTap, // overridden below
       ),
     );
   }

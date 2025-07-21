@@ -62,7 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // Save extra data to Firestore
       await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
-        'role': _selectedTab,
+        'role': _selectedTab.toLowerCase(),
         'email': _selectedTab == 'Student'
             ? _studentEmailController.text.trim()
             : _orgEmailController.text.trim(),
@@ -78,11 +78,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
       Get.snackbar("Success", "Account created successfully!", backgroundColor: Colors.green, colorText: Colors.white);
 
-      if (_selectedTab == 'Student') {
-        Get.offAllNamed('/create_profile_student_screen');
-      } else {
-        Get.offAllNamed('/create_profile_organization_screen');
-      }
+      Get.offAllNamed('/login_screen');
+
+      // if (_selectedTab == 'Student') {
+      //   Get.offAllNamed('/profile_student_screen');
+      // } else {
+      //   Get.offAllNamed('/profile_organization_screen');
+      // }
+
     } on FirebaseAuthException {
       Get.snackbar("Signup Failed", "Unknown error", backgroundColor: Colors.red, colorText: Colors.white);
     } catch (e) {

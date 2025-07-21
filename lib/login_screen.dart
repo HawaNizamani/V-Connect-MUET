@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
         String errorMessage;
 
         switch (e.code) {
-          case 'user-not-found':
+        case 'user-not-found':
             errorMessage = 'No user found with this email.';
             break;
           case 'wrong-password':

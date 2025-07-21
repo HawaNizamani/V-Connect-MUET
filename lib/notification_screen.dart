@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:v_connect_muet/applied_opportunities_screen.dart';
+import 'package:v_connect_muet/available_opportunities_screen.dart';
+import 'package:v_connect_muet/chatbot_screen.dart';
+import 'package:v_connect_muet/profile_student_screen.dart';
 import 'custom_bottom_navbar.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -30,19 +37,43 @@ class _NotificationScreenState extends State<NotificationScreen> {
     },
   ];
 
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+  void _onNavTap(int index) async {
+    if (index == 3) return; // already on this screen
+
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/profile');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
+        );
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/opportunities');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AppliedOpportunitiesScreen()),
+        );
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/search');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+        );
         break;
-      case 3:
+      case 4:
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (!mounted) return;
+          final userData = doc.data();
+          if (userData != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileStudentScreen(userData: userData),
+              ),
+            );
+          }
+        }
         break;
     }
   }
@@ -77,7 +108,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: _onNavTap,
+        role: 'student',
       ),
     );
   }

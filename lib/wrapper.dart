@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:v_connect_muet/available_opportunities_screen.dart';
+import 'package:v_connect_muet/create_opportunity_screen.dart';
 import 'package:v_connect_muet/login_screen.dart';
 import 'package:v_connect_muet/profile_student_screen.dart';
 import 'package:v_connect_muet/profile_organization_screen.dart';
@@ -42,16 +44,27 @@ class Wrapper extends StatelessWidget {
               return LoginScreen();
             }
 
-            final role = doc['role'];
+            final role = (doc['role'] as String).toLowerCase();
+
             if (role == 'student') {
-              return ProfileStudentScreen(userData: doc.data() as Map<String, dynamic>);
+              return AvailableOpportunitiesScreen();
             } else if (role == 'organization') {
-              return ProfileOrganizationScreen(userData: doc.data() as Map<String, dynamic>);
+              return CreateOpportunityScreen();
             } else {
               return const Scaffold(
-                body: Center(child: Text("Unknown role")),
+                body: Center(child: Text('Unknown role'),),
               );
             }
+
+            // if (role == 'student') {
+            //   return ProfileStudentScreen(userData: doc.data() as Map<String, dynamic>);
+            // } else if (role == 'organization') {
+            //   return ProfileOrganizationScreen(userData: doc.data() as Map<String, dynamic>);
+            // } else {
+            //   return const Scaffold(
+            //     body: Center(child: Text("Unknown role")),
+            //   );
+            // }
           },
         );
       },
