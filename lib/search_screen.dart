@@ -1,5 +1,5 @@
 // import 'package:flutter/material.dart';
-// import 'custom_bottom_navbar.dart';
+// import 'bottom_navbar_student.dart';
 //
 // class SearchScreen extends StatefulWidget {
 //   const SearchScreen({super.key});

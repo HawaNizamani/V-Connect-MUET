@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:v_connect_muet/applied_opportunities_screen.dart';
 import 'package:v_connect_muet/chatbot_screen.dart';
 import 'package:v_connect_muet/profile_student_screen.dart';
-import 'custom_bottom_navbar.dart';
+import 'bottom_navbar_student.dart';
 import 'opportunity_detail_screen.dart';
 import 'notification_screen.dart';
 
@@ -16,16 +16,8 @@ class AvailableOpportunitiesScreen extends StatefulWidget {
       _AvailableOpportunitiesScreenState();
 }
 
-class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScreen> {
   final Set<int> favorites = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
 
   void toggleFavorite(int index) {
     setState(() {
@@ -78,7 +70,6 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0A1D56);
@@ -105,110 +96,134 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
             splashRadius: 24,
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'In MUET'),
-            Tab(text: 'Near Me'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          buildOpportunityList(),
-          buildOpportunityList(),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 0, // Opportunities tab
-        role: 'student', // fixed role for student screen
-        onTap: _onNavTap, // overridden below
+      body: buildOpportunityList(),
+      bottomNavigationBar: StudentNavbar(
+        currentIndex: 0,
+        onTap: _onNavTap,
       ),
     );
   }
 
   Widget buildOpportunityList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const OpportunityDetailScreen()),
-            );
-          },
-          child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('opportunities')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("No opportunities available."));
+        }
+
+        final opportunities = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: opportunities.length,
+          itemBuilder: (context, index) {
+            final data = opportunities[index].data() as Map<String, dynamic>;
+
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OpportunityDetailScreen(
+                      opportunityData: data,
+                      opportunityId: opportunities[index].id,
+                    ),
+                  ),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const CircleAvatar(
-                        backgroundImage: AssetImage('assets/images/wall_of_hope.png'),
-                        radius: 25,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Be the Change',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const Text('How youth can thrive in Social Movements'),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: const [
-                                Icon(Icons.location_on, size: 16, color: Colors.grey),
-                                SizedBox(width: 4),
-                                Text('Software department MUET',
-                                    style: TextStyle(fontSize: 12)),
+                      Row(
+                        children: [
+                          const CircleAvatar(
+                            backgroundImage: AssetImage('assets/images/wall_of_hope.png'),
+                            radius: 25,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data['title'] ?? 'No Title',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                Text(data['organizationName'] ?? 'No Organization'),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(data['location'] ?? 'No Location',
+                                        style: const TextStyle(fontSize: 12)),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              favorites.contains(index)
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: favorites.contains(index) ? Colors.red : Colors.grey,
+                            ),
+                            onPressed: () => toggleFavorite(index),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          favorites.contains(index) ? Icons.favorite : Icons.favorite_border,
-                          color: favorites.contains(index) ? Colors.red : Colors.grey,
-                        ),
-                        onPressed: () => toggleFavorite(index),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Chip(
+                            label: Text(data['type'] ?? 'No Type'),
+                            backgroundColor: const Color(0xFFEDEDED),
+                          ),
+                          const SizedBox(width: 6),
+                          Chip(
+                            label: Text(data['requiredSkill'] ?? 'No Skill'),
+                            backgroundColor: const Color(0xFFEDEDED),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            data['deadline'] ?? 'No Deadline',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Eligibility: ${data['eligibility'] ?? 'Not specified'}",
+                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Contact: ${data['contact'] ?? 'Not provided'}",
+                        style: const TextStyle(fontSize: 12, color: Colors.black54),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: const [
-                      Chip(
-                        label: Text("One-day Event"),
-                        backgroundColor: Color(0xFFEDEDED),
-                      ),
-                      SizedBox(width: 6),
-                      Chip(
-                        label: Text("Community +1 more"),
-                        backgroundColor: Color(0xFFEDEDED),
-                      ),
-                      Spacer(),
-                      Icon(Icons.access_time, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text('4 hours ago', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

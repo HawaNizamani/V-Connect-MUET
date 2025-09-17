@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:v_connect_muet/available_opportunities_screen.dart';
-import 'package:v_connect_muet/profile_organization_screen.dart';
-import 'package:v_connect_muet/notification_screen.dart';
-import 'package:v_connect_muet/chatbot_screen.dart';
-import 'package:v_connect_muet/create_opportunity_screen.dart';
-import 'custom_bottom_navbar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateOpportunityScreen extends StatefulWidget {
   const CreateOpportunityScreen({super.key});
@@ -17,93 +10,72 @@ class CreateOpportunityScreen extends StatefulWidget {
 }
 
 class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  final Color primaryColor = const Color(0xFF0A1D56);
 
-  void _onNavTap(int index) async {
-    if (index == 1) return; // already on this screen
+  // Controllers for form input
+  final titleController = TextEditingController();
+  final orgNameController = TextEditingController();
+  final eligibilityController = TextEditingController();
+  final locationController = TextEditingController();
+  final deadlineController = TextEditingController();
+  final contactController = TextEditingController();
 
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
-        );
-        break;
-      case 4:
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-          if (!mounted) return;
-          final userData = doc.data();
-          if (userData != null) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfileOrganizationScreen(userData: userData),
-              ),
-            );
-          }
-        }
-        break;
-    }
-  }
+  // Dropdown selections
+  String? opportunityType;
+  String? requiredSkill;
 
-  Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
+  bool isLoading = false;
 
-  Future<void> _pickTime() async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
-    );
-    if (picked != null) setState(() => _selectedTime = picked);
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final title = _titleController.text;
-      final description = _descriptionController.text;
-      final location = _locationController.text;
-      final date = _selectedDate?.toLocal().toString().split(' ')[0] ?? '';
-      final time = _selectedTime?.format(context) ?? '';
-
-      // TODO: Upload to Firestore or backend
+  Future<void> _saveOpportunity() async {
+    if (titleController.text.isEmpty ||
+        orgNameController.text.isEmpty ||
+        opportunityType == null ||
+        requiredSkill == null ||
+        eligibilityController.text.isEmpty ||
+        locationController.text.isEmpty ||
+        deadlineController.text.isEmpty ||
+        contactController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Opportunity created successfully!")),
+        const SnackBar(content: Text("Please fill in all required fields")),
+      );
+      return;
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must be logged in as an organization")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      await FirebaseFirestore.instance.collection('opportunities').add({
+        'title': titleController.text.trim(),
+        'organizationName': orgNameController.text.trim(),
+        'type': opportunityType,
+        'requiredSkill': requiredSkill,
+        'eligibility': eligibilityController.text.trim(),
+        'location': locationController.text.trim(),
+        'contact': contactController.text.trim(),
+        'deadline': deadlineController.text.trim(),
+        'ownerId': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Opportunity created successfully")),
       );
 
-      _formKey.currentState?.reset();
-      _titleController.clear();
-      _descriptionController.clear();
-      _locationController.clear();
-      setState(() {
-        _selectedDate = null;
-        _selectedTime = null;
-      });
+      Navigator.pop(context); // Go back to previous screen
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -111,76 +83,111 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Opportunity'),
+        backgroundColor: primaryColor,
+        title: const Text('Create Opportunity', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter title' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-                validator: (value) => value == null || value.isEmpty ? 'Enter description' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(labelText: 'Location'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter location' : null,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(_selectedDate == null
-                        ? 'Select Date'
-                        : 'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}'),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildTextField('Title', controller: titleController),
+            const SizedBox(height: 12),
+            _buildTextField('Organization Name', controller: orgNameController),
+            const SizedBox(height: 12),
+            _buildDropdownField(
+              'Opportunity Type',
+              ['Internship', 'Job', 'Scholarship', 'Volunteering'],
+                  (val) => setState(() => opportunityType = val),
+            ),
+            const SizedBox(height: 12),
+            _buildDropdownField(
+              'Required Skill',
+              ['Programming', 'Design', 'Marketing', 'Research'],
+                  (val) => setState(() => requiredSkill = val),
+            ),
+            const SizedBox(height: 12),
+            _buildTextField('Eligibility Criteria', controller: eligibilityController),
+            const SizedBox(height: 12),
+            _buildTextField('Location', controller: locationController),
+            const SizedBox(height: 12),
+            _buildDateField('Application Deadline', controller: deadlineController),
+            const SizedBox(height: 12),
+            _buildTextField('Contact Email / Phone', controller: contactController),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // TODO: Optional - preview feature
+                    },
+                    child: const Text('View as applicant'),
                   ),
-                  ElevatedButton(
-                    onPressed: _pickDate,
-                    child: const Text('Pick Date'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                    onPressed: isLoading ? null : _saveOpportunity,
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Proceed', style: TextStyle(color: Colors.white)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(_selectedTime == null
-                        ? 'Select Time'
-                        : 'Time: ${_selectedTime!.format(context)}'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _pickTime,
-                    child: const Text('Pick Time'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _submitForm,
-                icon: const Icon(Icons.check),
-                label: const Text('Create Opportunity'),
-                style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 1, // Opportunities tab
-        role: 'organization', // fixed role for student screen
-        onTap: _onNavTap, // overridden below
+    );
+  }
+
+  Widget _buildTextField(String label, {TextEditingController? controller, String? prefixText}) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixText: prefixText,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
+    );
+  }
+
+  Widget _buildDropdownField(String label, List<String> items, Function(String?) onChanged) {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      value: null,
+      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildDateField(String label, {required TextEditingController controller}) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixIcon: const Icon(Icons.calendar_today),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      onTap: () async {
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime.now(),
+          lastDate: DateTime(2100),
+        );
+        if (pickedDate != null) {
+          controller.text = pickedDate.toString().split(' ')[0];
+        }
+      },
     );
   }
 }

@@ -7,7 +7,7 @@ import 'package:v_connect_muet/applied_opportunities_screen.dart';
 import 'package:v_connect_muet/available_opportunities_screen.dart';
 import 'package:v_connect_muet/chatbot_screen.dart';
 import 'package:v_connect_muet/notification_screen.dart';
-import 'custom_bottom_navbar.dart';
+import 'bottom_navbar_student.dart';
 
 class ProfileStudentScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -230,8 +230,6 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
     }
   }
 
-
-
   void _onNavTap(int index) async {
     if (index == 4) return; // already on this screen
 
@@ -255,11 +253,12 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
         );
         break;
       case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => NotificationScreen()),
-        );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => NotificationScreen(),
+              ),
+            );
         break;
     }
   }
@@ -271,6 +270,50 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       resizeToAvoidBottomInset: false,
+
+      drawer: Drawer(
+        child: Column(
+          children: [
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF0A1D56)),
+              currentAccountPicture: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, color: Colors.grey, size: 40),
+              ),
+              accountName: Text(widget.userData['name'] ?? 'No Name'),
+              accountEmail: Text(widget.userData['email'] ?? 'No Email'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Settings tapped")),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Favourites'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Favourites tapped")),
+                );
+              },
+            ),
+            const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: signout
+            ),
+          ],
+        ),
+      ),
+
+
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: primaryColor,
@@ -283,6 +326,14 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
             onPressed: _showPopupMenu,
           ),
         ],
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white,),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -515,11 +566,10 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 4,
-        onTap: _onNavTap,
-        role: 'student',
-      ),
+        bottomNavigationBar: StudentNavbar(
+            currentIndex: 4,
+            onTap: _onNavTap
+        )
     );
   }
 

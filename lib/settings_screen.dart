@@ -1,5 +1,5 @@
 // import 'package:flutter/material.dart';
-// import 'custom_bottom_navbar.dart';
+// import 'bottom_navbar_student.dart';
 //
 // class SettingsScreen extends StatefulWidget {
 //   const SettingsScreen({super.key});

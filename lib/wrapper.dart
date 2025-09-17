@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:v_connect_muet/available_opportunities_screen.dart';
 import 'package:v_connect_muet/create_opportunity_screen.dart';
+import 'package:v_connect_muet/dashboard_screen.dart';
 import 'package:v_connect_muet/login_screen.dart';
 import 'package:v_connect_muet/profile_student_screen.dart';
 import 'package:v_connect_muet/profile_organization_screen.dart';
@@ -49,7 +50,7 @@ class Wrapper extends StatelessWidget {
             if (role == 'student') {
               return AvailableOpportunitiesScreen();
             } else if (role == 'organization') {
-              return CreateOpportunityScreen();
+              return DashboardScreen();
             } else {
               return const Scaffold(
                 body: Center(child: Text('Unknown role'),),
