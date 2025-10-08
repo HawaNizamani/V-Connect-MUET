@@ -18,6 +18,7 @@ class ApplicationsScreen extends StatefulWidget {
 class _ApplicationsScreenState extends State<ApplicationsScreen> {
   final _userCache = <String, Map<String, dynamic>>{};
   User? _orgUser;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -29,40 +30,58 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   void _onNavTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
         break;
       case 1:
         return; // already on ApplicationsScreen
       case 2:
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const ChatbotScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+        );
         break;
       case 3:
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const NotificationScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const NotificationScreen()),
+        );
         break;
       case 4:
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const ProfileOrganizationScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileOrganizationScreen()),
+        );
         break;
     }
   }
 
   Future<Map<String, dynamic>?> _getStudent(String uid) async {
     if (_userCache.containsKey(uid)) return _userCache[uid];
-    final doc =
-    await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('users').doc(uid).get();
     final data = doc.data();
     if (data != null) _userCache[uid] = data;
     return data;
   }
 
   Future<void> _updateStatus(String appId, String status) async {
-    await FirebaseFirestore.instance.collection('applications').doc(appId).update({
+    await _firestore.collection('applications').doc(appId).update({
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  /// ✅ Delete applications if their related opportunity no longer exists
+  Future<void> _deleteIfOpportunityMissing(
+      String appId, String opportunityId) async {
+    final oppDoc =
+    await _firestore.collection('opportunities').doc(opportunityId).get();
+    if (!oppDoc.exists) {
+      await _firestore.collection('applications').doc(appId).delete();
+      debugPrint("🗑️ Deleted orphaned application: $appId");
+    }
   }
 
   @override
@@ -96,7 +115,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
             ),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
+                stream: _firestore
                     .collection('applications')
                     .where('orgId', isEqualTo: _orgUser!.uid)
                     .orderBy('appliedAt', descending: true)
@@ -123,10 +142,16 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
                       final uid = (appData['uid'] ?? '').toString();
                       final oppTitle = (appData['title'] ?? 'No Title').toString();
+                      final oppId = (appData['opportunityId'] ?? '').toString();
                       final status = (appData['status'] ?? 'pending').toString();
                       final appliedAt = appData['appliedAt'] is Timestamp
                           ? (appData['appliedAt'] as Timestamp).toDate()
                           : null;
+
+                      // ✅ Delete app if its opportunity no longer exists
+                      if (oppId.isNotEmpty) {
+                        _deleteIfOpportunityMissing(appDoc.id, oppId);
+                      }
 
                       return FutureBuilder<Map<String, dynamic>?>(
                         future: _getStudent(uid),
@@ -180,7 +205,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                             : Colors.green),
                                     onPressed: status == 'approved'
                                         ? null
-                                        : () => _updateStatus(appDoc.id, 'approved'),
+                                        : () => _updateStatus(
+                                        appDoc.id, 'approved'),
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.cancel,
@@ -189,7 +215,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                             : Colors.red),
                                     onPressed: status == 'rejected'
                                         ? null
-                                        : () => _updateStatus(appDoc.id, 'rejected'),
+                                        : () => _updateStatus(
+                                        appDoc.id, 'rejected'),
                                   ),
                                 ],
                               ),
