@@ -136,25 +136,54 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Widget buildNotificationCard(Map<String, dynamic> notif) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-      child: ListTile(
-        leading: const Icon(Icons.notifications, color: Color(0xFF0A1D56)),
-        title: Text(
-          notif["title"] ?? "New Notification",
-          style: TextStyle(
-            fontWeight:
-            (notif["read"] ?? false) ? FontWeight.normal : FontWeight.bold,
+  /// ✅ Updated: Now includes onTap navigation + marks as read
+  Widget buildNotificationCard(Map<String, dynamic> notif, String role, String docId) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    return InkWell(
+      onTap: () async {
+        // ✅ Mark as read in Firestore
+        if (uid != null) {
+          await FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(uid)
+              .collection('userNotifications')
+              .doc(docId)
+              .update({'read': true});
+        }
+
+        // ✅ Navigate based on role
+        if (role == 'student') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
+          );
+        } else if (role == 'organization') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ApplicationsScreen()),
+          );
+        }
+      },
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        child: ListTile(
+          leading: const Icon(Icons.notifications, color: Color(0xFF0A1D56)),
+          title: Text(
+            notif["title"] ?? "New Notification",
+            style: TextStyle(
+              fontWeight:
+              (notif["read"] ?? false) ? FontWeight.normal : FontWeight.bold,
+            ),
           ),
-        ),
-        subtitle: Text(notif["body"] ?? "You have a new update."),
-        trailing: Text(
-          notif["createdAt"] != null
-              ? TimeOfDay.fromDateTime(notif["createdAt"]).format(context)
-              : "",
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          subtitle: Text(notif["body"] ?? "You have a new update."),
+          trailing: Text(
+            notif["createdAt"] != null
+                ? TimeOfDay.fromDateTime(notif["createdAt"]).format(context)
+                : "",
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ),
       ),
     );
@@ -180,11 +209,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         final uid = FirebaseAuth.instance.currentUser?.uid;
 
         return StreamBuilder<QuerySnapshot>(
-          // ✅ Fixed Firestore path
           stream: FirebaseFirestore.instance
               .collection('notifications')
               .doc(uid)
-              .collection('userNotifications') // ✅ Correct subcollection name
+              .collection('userNotifications') // ✅ Correct subcollection
               .orderBy('createdAt', descending: true)
               .snapshots(),
           builder: (context, notifSnap) {
@@ -195,8 +223,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
             if (!notifSnap.hasData || notifSnap.data!.docs.isEmpty) {
               return Scaffold(
-                body:
-                const Center(child: Text("No notifications available.")),
+                body: const Center(child: Text("No notifications available.")),
                 bottomNavigationBar: role == 'student'
                     ? StudentNavbar(
                   currentIndex: 3,
@@ -212,6 +239,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             final notifications = notifSnap.data!.docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>;
               return {
+                "id": doc.id,
                 "title": data["title"] ?? "New Notification",
                 "body": data["body"] ?? "You have a new update.",
                 "read": data["read"] ?? false,
@@ -229,8 +257,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 18),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -288,7 +316,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     const SizedBox(height: 12),
                     Expanded(
                       child: ListView(
-                        children: filtered.map(buildNotificationCard).toList(),
+                        children: filtered
+                            .map((notif) => buildNotificationCard(
+                            notif, role, notif["id"].toString()))
+                            .toList(),
                       ),
                     ),
                   ],
@@ -301,8 +332,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               )
                   : OrganizationNavbar(
                 currentIndex: 3,
-                onTap: (index) =>
-                    _onNavTap('organization', index),
+                onTap: (index) => _onNavTap('organization', index),
               ),
             );
           },

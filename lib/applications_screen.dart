@@ -7,6 +7,7 @@ import 'dashboard_screen.dart';
 import 'chatbot_screen.dart';
 import 'notification_screen.dart';
 import 'profile_organization_screen.dart';
+import 'profile_student_screen.dart'; // ✅ import student profile screen
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({super.key});
@@ -24,7 +25,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   void initState() {
     super.initState();
     _orgUser = FirebaseAuth.instance.currentUser;
-    print("=== ORG USER UID === ${_orgUser?.uid}");
   }
 
   void _onNavTap(BuildContext context, int index) {
@@ -73,11 +73,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     });
   }
 
-  /// ✅ Delete applications if their related opportunity no longer exists
-  Future<void> _deleteIfOpportunityMissing(
-      String appId, String opportunityId) async {
-    final oppDoc =
-    await _firestore.collection('opportunities').doc(opportunityId).get();
+  Future<void> _deleteIfOpportunityMissing(String appId, String opportunityId) async {
+    final oppDoc = await _firestore.collection('opportunities').doc(opportunityId).get();
     if (!oppDoc.exists) {
       await _firestore.collection('applications').doc(appId).delete();
       debugPrint("🗑️ Deleted orphaned application: $appId");
@@ -100,6 +97,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // 🔹 Title
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Align(
@@ -107,12 +105,15 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                 child: Text(
                   'Manage Applications',
                   style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
                 ),
               ),
             ),
+
+            // 🔹 Applications List
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _firestore
@@ -148,7 +149,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                           ? (appData['appliedAt'] as Timestamp).toDate()
                           : null;
 
-                      // ✅ Delete app if its opportunity no longer exists
                       if (oppId.isNotEmpty) {
                         _deleteIfOpportunityMissing(appDoc.id, oppId);
                       }
@@ -168,22 +168,19 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                           }
 
                           final student = snap.data ?? {};
-                          final studentName =
-                          (student['name'] ?? 'Unknown Student').toString();
-                          final studentEmail =
-                          (student['email'] ?? '').toString();
+                          final studentName = (student['name'] ?? 'Unknown Student').toString();
+                          final studentEmail = (student['email'] ?? '').toString();
 
                           return Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             elevation: 3,
                             child: ListTile(
-                              leading:
-                              const CircleAvatar(child: Icon(Icons.person)),
-                              title: Text(studentName,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
+                              leading: const CircleAvatar(child: Icon(Icons.person)),
+                              title: Text(
+                                studentName,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -191,7 +188,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                   Text('Applied for: $oppTitle'),
                                   if (appliedAt != null)
                                     Text(
-                                        'Applied at: ${appliedAt.day}/${appliedAt.month}/${appliedAt.year}'),
+                                      'Applied at: ${appliedAt.day}/${appliedAt.month}/${appliedAt.year}',
+                                    ),
                                   Text('Status: ${status.toUpperCase()}'),
                                 ],
                               ),
@@ -199,27 +197,54 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.check_circle,
-                                        color: status == 'approved'
-                                            ? Colors.grey
-                                            : Colors.green),
+                                    icon: Icon(
+                                      Icons.check_circle,
+                                      color: status == 'approved'
+                                          ? Colors.grey
+                                          : Colors.green,
+                                    ),
                                     onPressed: status == 'approved'
                                         ? null
-                                        : () => _updateStatus(
-                                        appDoc.id, 'approved'),
+                                        : () => _updateStatus(appDoc.id, 'approved'),
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.cancel,
-                                        color: status == 'rejected'
-                                            ? Colors.grey
-                                            : Colors.red),
+                                    icon: Icon(
+                                      Icons.cancel,
+                                      color: status == 'rejected'
+                                          ? Colors.grey
+                                          : Colors.red,
+                                    ),
                                     onPressed: status == 'rejected'
                                         ? null
-                                        : () => _updateStatus(
-                                        appDoc.id, 'rejected'),
+                                        : () => _updateStatus(appDoc.id, 'rejected'),
                                   ),
                                 ],
                               ),
+
+                              // ✅ Tap to view student profile (view-only)
+                              onTap: () async {
+                                final studentData = await _getStudent(uid);
+                                if (studentData != null) {
+                                  // ✅ FIX: Ensure UID is passed
+                                  studentData['uid'] = uid;
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProfileStudentScreen(
+                                        userData: studentData,
+                                        isViewOnly: true,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to load student data'),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           );
                         },
@@ -232,6 +257,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ],
         ),
       ),
+
+      // 🔹 Bottom Navigation
       bottomNavigationBar: OrganizationNavbar(
         currentIndex: 1,
         onTap: (index) => _onNavTap(context, index),

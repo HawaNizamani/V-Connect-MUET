@@ -11,8 +11,13 @@ import 'bottom_navbar_student.dart';
 
 class ProfileStudentScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
+  final bool isViewOnly; // 👈 Added view-only flag
 
-  const ProfileStudentScreen({super.key, required this.userData});
+  const ProfileStudentScreen({
+    super.key,
+    required this.userData,
+    this.isViewOnly = false,
+  });
 
   @override
   State<ProfileStudentScreen> createState() => _ProfileStudentScreenState();
@@ -21,7 +26,6 @@ class ProfileStudentScreen extends StatefulWidget {
 class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
   File? _profileImage;
   bool isEditMode = false;
-
 
   signout() async {
     await FirebaseAuth.instance.signOut();
@@ -33,21 +37,19 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
   late TextEditingController departmentController;
   late TextEditingController bioController;
 
-
   @override
   void initState() {
     super.initState();
-
     nameController = TextEditingController(text: widget.userData['name'] ?? '');
     professionController = TextEditingController(text: widget.userData['profession'] ?? '');
     batchController = TextEditingController(text: widget.userData['batch'] ?? '');
     departmentController = TextEditingController(text: widget.userData['department'] ?? '');
     bioController = TextEditingController(text: widget.userData['bio'] ?? '');
-
     loadExperienceData();
   }
 
   Future<void> updateUserData() async {
+    if (widget.isViewOnly) return; // 👈 Prevent updates in view-only mode
     final uid = widget.userData['uid'];
     if (uid == null) return;
 
@@ -59,24 +61,27 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
       'bio': bioController.text.trim(),
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile updated")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Profile updated")),
+    );
     setState(() => isEditMode = false);
   }
 
   List<Map<String, String>> experiences = [];
 
   void _pickProfileImage() async {
+    if (widget.isViewOnly) return; // 👈 disable in view-only
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _profileImage = File(picked.path));
-    }
+    if (picked != null) setState(() => _profileImage = File(picked.path));
   }
 
   void _toggleEdit() {
+    if (widget.isViewOnly) return; // 👈 disable in view-only
     setState(() => isEditMode = true);
   }
 
   void _showPopupMenu() async {
+    if (widget.isViewOnly) return; // 👈 disable in view-only
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
     await showMenu(
@@ -96,19 +101,21 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
         ),
         PopupMenuItem(
           onTap: signout,
-          child: Row(
+          child: const Row(
             children: [
-              Icon(Icons.logout, size: 18,),
-              SizedBox(width: 6,),
-              Text('Logout')
+              Icon(Icons.logout, size: 18),
+              SizedBox(width: 6),
+              Text('Logout'),
             ],
           ),
-        )
+        ),
       ],
     );
   }
 
   void showAddExperienceDialog(BuildContext context) {
+    if (widget.isViewOnly) return; // 👈 disable in view-only
+
     TextEditingController titleController = TextEditingController();
     TextEditingController companyController = TextEditingController();
     TextEditingController durationController = TextEditingController();
@@ -116,22 +123,22 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Add Experience'),
+        title: const Text('Add Experience'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleController, decoration: InputDecoration(labelText: 'Title')),
-            TextField(controller: companyController, decoration: InputDecoration(labelText: 'Company')),
-            TextField(controller: durationController, decoration: InputDecoration(labelText: 'Duration')),
+            TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Title')),
+            TextField(controller: companyController, decoration: const InputDecoration(labelText: 'Company')),
+            TextField(controller: durationController, decoration: const InputDecoration(labelText: 'Duration')),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              final String title = titleController.text.trim();
-              final String company = companyController.text.trim();
-              final String duration = durationController.text.trim();
+              final title = titleController.text.trim();
+              final company = companyController.text.trim();
+              final duration = durationController.text.trim();
 
               if (title.isEmpty || company.isEmpty || duration.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -141,124 +148,77 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
               }
 
               final uid = widget.userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid;
-              if (uid == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('User ID not found.')),
+              if (uid == null) return;
+
+              final newExp = {'title': title, 'company': company, 'duration': duration};
+              final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+              List<dynamic> currentExps = userDoc.data()?['experience'] ?? [];
+              currentExps.add(newExp);
+
+              await FirebaseFirestore.instance.collection('users').doc(uid).update({
+                'experience': currentExps,
+              });
+
+              setState(() {
+                experiences = List<Map<String, String>>.from(
+                  currentExps.map((e) => Map<String, String>.from(e)),
                 );
-                return;
-              }
+              });
 
-              final newExp = {
-                'title': title,
-                'company': company,
-                'duration': duration,
-              };
-
-              try {
-                final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-                List<dynamic> currentExps = userDoc.data()?['experience'] ?? [];
-
-                currentExps.add(newExp);
-
-                await FirebaseFirestore.instance.collection('users').doc(uid).update({
-                  'experience': currentExps,
-                });
-
-                // Update local state to reflect UI immediately
-                setState(() {
-                  experiences = List<Map<String, String>>.from(
-                    currentExps.map((e) => Map<String, String>.from(e)),
-                  );
-                });
-
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Experience added')),
-                );
-              } catch (e) {
-                print('Error saving experience: $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to save experience: $e')),
-                );
-              }
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Experience added')),
+              );
             },
-            child: Text('Add'),
+            child: const Text('Add'),
           ),
         ],
       ),
     );
   }
 
-
-  void deleteExperience(int index) async {
-    String uid = widget.userData['uid'];
-
-    setState(() {
-      experiences.removeAt(index);
-    });
-
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'experience': experiences,
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Experience deleted')),
-    );
-  }
-
   void loadExperienceData() async {
-    final uid = widget.userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      print('No UID found');
-      return;
-    }
-
     try {
+      // 👇 Determine which user's data to load
+      final uid = widget.isViewOnly
+          ? widget.userData['uid'] // student's UID in view-only mode
+          : FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid == null) return;
+
+      // ✅ Fetch user document from Firestore
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = userDoc.data();
+
       if (data != null && data.containsKey('experience')) {
         final expData = data['experience'] as List<dynamic>;
 
         setState(() {
-          experiences = expData
-              .map((e) => Map<String, String>.from(e as Map))
-              .toList();
+          experiences = expData.map((e) => Map<String, String>.from(e as Map)).toList();
         });
+      } else {
+        setState(() => experiences = []);
       }
     } catch (e) {
-      print('Error fetching experience data: $e');
+      debugPrint('⚠️ Error loading experiences: $e');
     }
   }
 
-  void _onNavTap(int index) async {
-    if (index == 4) return; // already on this screen
 
+  void _onNavTap(int index) async {
+    if (index == 4) return; // already on profile
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()));
         break;
       case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AppliedOpportunitiesScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AppliedOpportunitiesScreen()));
         break;
       case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ChatbotScreen()));
         break;
       case 3:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => NotificationScreen(),
-              ),
-            );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
         break;
     }
   }
@@ -271,7 +231,10 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
       backgroundColor: Colors.grey[200],
       resizeToAvoidBottomInset: false,
 
-      drawer: Drawer(
+      // Hide Drawer for view-only
+      drawer: widget.isViewOnly
+          ? null
+          : Drawer(
         child: Column(
           children: [
             UserAccountsDrawerHeader(
@@ -307,45 +270,42 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),
-              onTap: signout
+              onTap: signout,
             ),
           ],
         ),
       ),
 
-
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: !widget.isViewOnly,
         backgroundColor: primaryColor,
-        elevation: 0,
         titleSpacing: 16,
-        title: const Text('Student Profile', style: TextStyle(color: Colors.white)),
-        actions: [
+        title: Text(
+          widget.isViewOnly ? 'Student Profile' : 'Student Profile',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: widget.isViewOnly
+            ? []
+            : [
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: _showPopupMenu,
           ),
         ],
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white,),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showAddExperienceDialog(context);
-        },
-        child: Icon(Icons.add),
+
+      floatingActionButton: widget.isViewOnly
+          ? null
+          : FloatingActionButton(
+        onPressed: () => showAddExperienceDialog(context),
+        child: const Icon(Icons.add),
       ),
 
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
+              // ✅ Profile header
               Container(
                 width: double.infinity,
                 color: primaryColor,
@@ -353,7 +313,7 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                 child: Column(
                   children: [
                     GestureDetector(
-                      onTap: isEditMode ? _pickProfileImage : null,
+                      onTap: widget.isViewOnly || !isEditMode ? null : _pickProfileImage,
                       child: CircleAvatar(
                         radius: 45,
                         backgroundColor: Colors.white,
@@ -366,7 +326,7 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                     const SizedBox(height: 10),
                     buildEditableField(
                       nameController,
-                      isEditMode,
+                      isEditMode && !widget.isViewOnly,
                       fontSize: 20,
                       color: Colors.white,
                       isCenter: true,
@@ -376,7 +336,7 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                     const SizedBox(height: 6),
                     buildEditableField(
                       professionController,
-                      isEditMode,
+                      isEditMode && !widget.isViewOnly,
                       fontSize: 16,
                       color: Colors.white70,
                       isCenter: true,
@@ -385,66 +345,13 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                       hideUnderline: !isEditMode,
                     ),
                     const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: isEditMode
-                          ? Row(
-                        children: [
-                          Expanded(
-                            child: buildEditableField(
-                              batchController,
-                              true,
-                              placeholder: "Batch",
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(height: 20, width: 2, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: buildEditableField(
-                              departmentController,
-                              true,
-                              placeholder: "Department",
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      )
-                          : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(batchController.text, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                          const SizedBox(width: 8),
-                          Container(height: 16, width: 2, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text(departmentController.text, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                        ],
-                      ),
-                    ),
+                    Text('${batchController.text} | ${departmentController.text}',
+                        style: const TextStyle(color: Colors.white, fontSize: 14)),
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: isEditMode
-                          ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Text("Bio", style: TextStyle(color: Colors.white70)),
-                          ),
-                          buildEditableField(
-                            bioController,
-                            true,
-                            placeholder: "Write about yourself",
-                            color: Colors.white,
-                          ),
-                        ],
-                      )
-                          : Text(
-                        bioController.text,
+                      child: Text(
+                        bioController.text.isEmpty ? 'No bio available' : bioController.text,
                         style: const TextStyle(color: Colors.white70, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
@@ -453,123 +360,59 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                 ),
               ),
 
+              // ✅ Experience Section
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Experience', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Experience',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
+                    if (experiences.isEmpty)
+                      const Text("No experience added yet"),
                     ...experiences.asMap().entries.map((entry) {
                       int index = entry.key;
                       Map<String, String> exp = entry.value;
-
                       return Card(
-                        margin: EdgeInsets.only(bottom: 8),
+                        margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           title: Text(exp['title'] ?? ''),
                           subtitle: Text('${exp['company'] ?? ''} | ${exp['duration'] ?? ''}'),
-                          trailing: IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () async {
-                              final uid = widget.userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid;
-                              if (uid == null) {
-                                print('No UID found');
-                                return;
-                              }
-
-                              // Get the item to be deleted
-                              final itemToDelete = experiences[index];
-
-                              try {
-                                // Remove from Firestore
-                                final userDocRef = FirebaseFirestore.instance.collection('users').doc(uid);
-                                final snapshot = await userDocRef.get();
-                                final currentData = snapshot.data();
-
-                                if (currentData != null && currentData.containsKey('experience')) {
-                                  List<dynamic> currentExperience = currentData['experience'];
-
-                                  // Remove the item from the list
-                                  currentExperience.removeWhere((item) =>
-                                  item['title'] == itemToDelete['title'] &&
-                                      item['organization'] == itemToDelete['organization'] &&
-                                      item['duration'] == itemToDelete['duration']);
-
-                                  // Update Firestore
-                                  await userDocRef.update({'experience': currentExperience});
-                                }
-
-                                // Remove from local UI list
-                                setState(() {
-                                  experiences.removeAt(index);
-                                });
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Experience deleted')),
-                                );
-                              } catch (e) {
-                                print('Delete error: $e');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to delete experience')),
-                                );
-                              }
+                          trailing: widget.isViewOnly
+                              ? null
+                              : IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() => experiences.removeAt(index));
+                              FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(widget.userData['uid'])
+                                  .update({'experience': experiences});
                             },
-                          )
-
+                          ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
 
-
               const SizedBox(height: 20),
-              if (isEditMode)
+
+              if (isEditMode && !widget.isViewOnly)
                 ElevatedButton(
-                  onPressed: () async {
-                    final uid = widget.userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid;
-
-                    if (uid == null || uid.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('User ID not found. Cannot update data.')),
-                      );
-                      return;
-                    }
-
-                    try {
-                      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-                        'name': nameController.text.trim(),
-                        'department': departmentController.text.trim(),
-                        'batch': batchController.text.trim(),
-                        'bio': bioController.text.trim(),
-                        'profession': professionController.text.trim(),
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Profile updated successfully!')),
-                      );
-
-                      setState(() => isEditMode = false);
-                    } catch (e) {
-                      print('Update error: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: $e')),
-                      );
-                    }
-                  },
-
-                  child: Text('Save Data'),
+                  onPressed: updateUserData,
+                  child: const Text('Save Data'),
                 ),
             ],
           ),
         ),
       ),
-        bottomNavigationBar: StudentNavbar(
-            currentIndex: 4,
-            onTap: _onNavTap
-        )
+
+      bottomNavigationBar: widget.isViewOnly
+          ? null
+          : StudentNavbar(currentIndex: 4, onTap: _onNavTap),
     );
   }
 
@@ -613,7 +456,10 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
         : Text(
       controller.text.isEmpty ? (placeholder ?? '') : controller.text,
       textAlign: isCenter ? TextAlign.center : TextAlign.start,
-      style: TextStyle(fontSize: fontSize, color: color.withOpacity(controller.text.isEmpty ? 0.5 : 1)),
+      style: TextStyle(
+        fontSize: fontSize,
+        color: color.withOpacity(controller.text.isEmpty ? 0.5 : 1),
+      ),
     );
   }
 }
