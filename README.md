@@ -1,4 +1,4 @@
-V-Connect MUET: Intelligent Student-Organization Engagement Platform
+**V-Connect MUET: Intelligent Student-Organization Engagement Platform**
 
 1. Introduction
 V-Connect MUET is a role-based mobile application developed using Flutter to facilitate structured volunteer engagement within the Mehran University of Engineering & Technology (MUET). The system enables seamless interaction between students seeking volunteer opportunities and university organizations offering them. The application ensures efficient communication, streamlined opportunity management, and improved visibility of campus-wide activities.
