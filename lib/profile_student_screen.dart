@@ -7,6 +7,7 @@ import 'package:v_connect_muet/applied_opportunities_screen.dart';
 import 'package:v_connect_muet/available_opportunities_screen.dart';
 import 'package:v_connect_muet/chatbot_screen.dart';
 import 'package:v_connect_muet/notification_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'bottom_navbar_student.dart';
 
 class ProfileStudentScreen extends StatefulWidget {
@@ -27,8 +28,17 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
   File? _profileImage;
   bool isEditMode = false;
 
-  signout() async {
-    await FirebaseAuth.instance.signOut();
+  Future<void> signout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      // Navigate to login screen after logout
+      Navigator.of(context).pushReplacementNamed('/login');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Logout failed: $e")),
+      );
+    }
   }
 
   late TextEditingController nameController;
@@ -45,34 +55,103 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
     batchController = TextEditingController(text: widget.userData['batch'] ?? '');
     departmentController = TextEditingController(text: widget.userData['department'] ?? '');
     bioController = TextEditingController(text: widget.userData['bio'] ?? '');
+    // Safely initialize profileImage
+    widget.userData['profileImage'] = widget.userData.containsKey('profileImage')
+        ? widget.userData['profileImage']
+        : '';
     loadExperienceData();
   }
 
+  // Inside _ProfileStudentScreenState
+
   Future<void> updateUserData() async {
-    if (widget.isViewOnly) return; // 👈 Prevent updates in view-only mode
-    final uid = widget.userData['uid'];
+    if (widget.isViewOnly) return;
+
+    final uid = widget.userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'name': nameController.text.trim(),
-      'profession': professionController.text.trim(),
-      'batch': batchController.text.trim(),
-      'department': departmentController.text.trim(),
-      'bio': bioController.text.trim(),
-    });
+    try {
+      // Build update map
+      final update = <String, dynamic>{
+        'name': nameController.text.trim(),
+        'profession': professionController.text.trim(),
+        'batch': batchController.text.trim(),
+        'department': departmentController.text.trim(),
+        'bio': bioController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(), // optional timestamp
+      };
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Profile updated")),
-    );
-    setState(() => isEditMode = false);
+      // Update Firestore
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(update, SetOptions(merge: true));
+
+      // Update local userData
+      widget.userData.addAll(update);
+
+      // ✅ Exit edit mode to return to view mode
+      setState(() {
+        isEditMode = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully")),
+      );
+    } catch (e) {
+      debugPrint('⚠️ Error updating profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to update profile")),
+      );
+    }
   }
 
   List<Map<String, String>> experiences = [];
 
   void _pickProfileImage() async {
-    if (widget.isViewOnly) return; // 👈 disable in view-only
+    if (widget.isViewOnly || !isEditMode) return;
+
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => _profileImage = File(picked.path));
+    if (picked == null) return;
+
+    setState(() => _profileImage = File(picked.path));
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('$uid.jpg');
+
+      // ✅ Upload the file and wait until complete
+      final uploadTask = ref.putFile(_profileImage!);
+      final snapshot = await uploadTask.whenComplete(() {});
+
+      // ✅ Make sure upload succeeded
+      if (snapshot.state == TaskState.success) {
+        // ✅ Get download URL safely
+        final imageUrl = await ref.getDownloadURL();
+
+        // ✅ Save URL in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'profileImage': imageUrl,
+        });
+
+        // ✅ Update local memory
+        setState(() {
+          widget.userData['profileImage'] = imageUrl;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile picture updated")),
+        );
+      } else {
+        throw Exception("Upload failed");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Image upload failed: $e")),
+      );
+    }
   }
 
   void _toggleEdit() {
@@ -190,6 +269,11 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = userDoc.data();
 
+      // Safely update profileImage from Firestore
+      widget.userData['profileImage'] = data?.containsKey('profileImage') == true
+          ? data!['profileImage']
+          : '';
+
       if (data != null && data.containsKey('experience')) {
         final expData = data['experience'] as List<dynamic>;
 
@@ -279,6 +363,7 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isViewOnly,
         backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 16,
         title: Text(
           widget.isViewOnly ? 'Student Profile' : 'Student Profile',
@@ -317,43 +402,105 @@ class _ProfileStudentScreenState extends State<ProfileStudentScreen> {
                       child: CircleAvatar(
                         radius: 45,
                         backgroundColor: Colors.white,
-                        backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                        child: _profileImage == null
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : (widget.userData['profileImage'] != null
+                            ? NetworkImage(widget.userData['profileImage'])
+                            : null),
+                        child: (_profileImage == null && widget.userData['profileImage'] == null)
                             ? const Icon(Icons.person, size: 50, color: Colors.grey)
                             : null,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    buildEditableField(
+                    isEditMode && !widget.isViewOnly
+                        ? buildEditableField(
                       nameController,
-                      isEditMode && !widget.isViewOnly,
+                      true,
                       fontSize: 20,
                       color: Colors.white,
                       isCenter: true,
                       placeholder: "Name",
-                      hideUnderline: !isEditMode,
+                      hideUnderline: false,
+                    )
+                        : Text(
+                      nameController.text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 6),
-                    buildEditableField(
+                    isEditMode && !widget.isViewOnly
+                        ? buildEditableField(
                       professionController,
-                      isEditMode && !widget.isViewOnly,
+                      true,
                       fontSize: 16,
                       color: Colors.white70,
                       isCenter: true,
                       placeholder: "Skill / Profession",
-                      underlineWidth: isEditMode ? 180 : null,
-                      hideUnderline: !isEditMode,
+                    )
+                        : Text(
+                      professionController.text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    Text('${batchController.text} | ${departmentController.text}',
-                        style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    isEditMode && !widget.isViewOnly
+                        ? Column(
+                      children: [
+                        buildEditableField(
+                          batchController,
+                          true,
+                          fontSize: 14,
+                          color: Colors.white,
+                          isCenter: true,
+                          placeholder: "Batch",
+                          hideUnderline: false,
+                        ),
+                        const SizedBox(height: 5),
+                        buildEditableField(
+                          departmentController,
+                          true,
+                          fontSize: 14,
+                          color: Colors.white,
+                          isCenter: true,
+                          placeholder: "Department",
+                          hideUnderline: false,
+                        ),
+                      ],
+                    )
+                        : Text(
+                      '${batchController.text} | ${departmentController.text}',
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        bioController.text.isEmpty ? 'No bio available' : bioController.text,
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
-                        textAlign: TextAlign.center,
+                      child: isEditMode && !widget.isViewOnly
+                          ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: buildEditableField(
+                          bioController,
+                          true,
+                          fontSize: 14,
+                          color: Colors.white,
+                          isCenter: true,
+                          placeholder: "Bio",
+                          hideUnderline: false,
+                        ),
+                      )
+                          : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          bioController.text.isEmpty ? 'No bio available' : bioController.text,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ],

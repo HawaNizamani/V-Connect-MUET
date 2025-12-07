@@ -84,18 +84,6 @@ class _AvailableOpportunitiesScreenState extends State<AvailableOpportunitiesScr
           'Available Opportunities',
           style: TextStyle(color: Colors.white),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-            splashRadius: 24,
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
-            onPressed: () {},
-            splashRadius: 24,
-          ),
-        ],
       ),
       body: buildOpportunityList(),
       bottomNavigationBar: StudentNavbar(

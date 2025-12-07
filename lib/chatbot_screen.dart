@@ -1,15 +1,20 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:v_connect_muet/applications_screen.dart';
-import 'package:v_connect_muet/applied_opportunities_screen.dart';
-import 'package:v_connect_muet/available_opportunities_screen.dart';
-import 'package:v_connect_muet/profile_organization_screen.dart';
-import 'package:v_connect_muet/profile_student_screen.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:http/http.dart' as http;
+import 'package:googleapis_auth/auth_io.dart';
+
+import 'applications_screen.dart';
+import 'applied_opportunities_screen.dart';
+import 'available_opportunities_screen.dart';
 import 'bottom_navbar_organization.dart';
 import 'bottom_navbar_student.dart';
 import 'dashboard_screen.dart';
 import 'notification_screen.dart';
+import 'profile_organization_screen.dart';
+import 'profile_student_screen.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -21,101 +26,133 @@ class ChatbotScreen extends StatefulWidget {
 class _ChatbotScreenState extends State<ChatbotScreen> {
   final List<Map<String, String>> _messages = [];
   final TextEditingController _controller = TextEditingController();
+  bool _isSending = false;
 
-  void _sendMessage() {
+  // ✅ Send message to Dialogflow using service account
+  Future<String> _sendToDialogflow(String query) async {
+    // Load credentials from assets
+    final serviceAccount = jsonDecode(await rootBundle
+        .loadString('assets/credentials/v-connect-muet-cf44b-92a0bc379a2f.json'));
+
+    final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
+
+    // Generate authenticated client
+    final client = await clientViaServiceAccount(
+      credentials,
+      ['https://www.googleapis.com/auth/cloud-platform'],
+    );
+
+    final projectId = serviceAccount['project_id'];
+    final apiUrl =
+        'https://dialogflow.googleapis.com/v2/projects/v-connect-muet-cf44b/agent/sessions/123456789:detectIntent';
+
+    final response = await client.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json; charset=utf-8'},
+      body: jsonEncode({
+        "queryInput": {
+          "text": {"text": query, "languageCode": "en"}
+        }
+      }),
+    );
+
+    final body = jsonDecode(response.body);
+    client.close();
+
+    if (body['queryResult'] != null) {
+      return body['queryResult']['fulfillmentText'] ?? "Sorry, I didn’t get that.";
+    } else {
+      return "Error: ${body['error']?['message'] ?? 'Unknown error.'}";
+    }
+  }
+
+  void _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending) return;
 
     setState(() {
       _messages.add({'sender': 'user', 'text': text});
+      _isSending = true;
     });
     _controller.clear();
 
-    // Simulate bot response
-    Future.delayed(const Duration(milliseconds: 500), () {
+    try {
+      final reply = await _sendToDialogflow(text);
+      setState(() {
+        _messages.add({'sender': 'bot', 'text': reply});
+      });
+    } catch (e) {
       setState(() {
         _messages.add({
           'sender': 'bot',
-          'text': 'This is a dummy reply for: "$text"',
+          'text': 'Error connecting to chatbot. Please try again later.'
         });
       });
-    });
+    } finally {
+      setState(() => _isSending = false);
+    }
   }
 
   Future<String?> _getUserRole() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
     final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data()?['role']; // assumes role is "student" or "organization"
+    await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    return doc.data()?['role']; // "student" or "organization"
   }
 
   void _onNavTap(String role, int index) async {
-    if (index == 2) return; // already on notifications
+    if (index == 2) return; // already on chatbot
 
     if (role == 'organization') {
       switch (index) {
         case 0:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const DashboardScreen()));
           break;
         case 1:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const ApplicationsScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const ApplicationsScreen()));
           break;
         case 3:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const NotificationScreen()));
           break;
         case 4:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => ProfileOrganizationScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => ProfileOrganizationScreen()));
           break;
       }
     } else {
       switch (index) {
         case 0:
           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AvailableOpportunitiesScreen()),
-          );
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const AvailableOpportunitiesScreen()));
           break;
         case 1:
           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AppliedOpportunitiesScreen()),
-          );
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const AppliedOpportunitiesScreen()));
           break;
         case 3:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const NotificationScreen()));
           break;
         case 4:
           final uid = FirebaseAuth.instance.currentUser?.uid;
           if (uid != null) {
             final doc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .get();
+            await FirebaseFirestore.instance.collection('users').doc(uid).get();
             if (!mounted) return;
             final userData = doc.data();
             if (userData != null) {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ProfileStudentScreen(userData: userData),
-                ),
+                    builder: (_) => ProfileStudentScreen(userData: userData)),
               );
             }
           }
@@ -149,75 +186,68 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
             centerTitle: true,
             elevation: 1,
-            automaticallyImplyLeading: false, // removes the top-left arrow
+            automaticallyImplyLeading: false,
           ),
           body: SafeArea(
             child: Column(
               children: [
                 Expanded(
-                  child:
-                      _messages.isEmpty
-                          ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Dummy photo same as student chatbot
-                                const CircleAvatar(
-                                  radius: 60,
-                                  backgroundImage: NetworkImage(
-                                    "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                                  ),
-                                  backgroundColor: Colors.transparent,
-                                ),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  "How can I help you?",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          : ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              final message = _messages[index];
-                              final isUser = message['sender'] == 'user';
-                              return Align(
-                                alignment:
-                                    isUser
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isUser
-                                            ? primary.withOpacity(0.9)
-                                            : Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    message['text'] ?? '',
-                                    style: TextStyle(
-                                      color:
-                                          isUser
-                                              ? Colors.white
-                                              : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                  child: _messages.isEmpty
+                      ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundImage: NetworkImage(
+                            "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                           ),
+                          backgroundColor: Colors.transparent,
+                        ),
+                        SizedBox(height: 20),
+                        Text(
+                          "How can I help you?",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isUser = message['sender'] == 'user';
+                      return Align(
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin:
+                          const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isUser
+                                ? primary.withOpacity(0.9)
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            message['text'] ?? '',
+                            style: TextStyle(
+                              color:
+                              isUser ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(12),
@@ -231,9 +261,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             filled: true,
                             fillColor: Colors.white,
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
+                                horizontal: 16, vertical: 8),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20),
                               borderSide: BorderSide.none,
@@ -242,8 +270,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           onSubmitted: (_) => _sendMessage(),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: primary),
+                      _isSending
+                          ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child:
+                            CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                          : IconButton(
+                        icon:
+                        const Icon(Icons.send, color: primary),
                         onPressed: _sendMessage,
                       ),
                     ],
@@ -252,16 +290,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ],
             ),
           ),
-          bottomNavigationBar:
-              role == 'student'
-                  ? StudentNavbar(
-                    currentIndex: 2,
-                    onTap: (index) => _onNavTap('student', index),
-                  )
-                  : OrganizationNavbar(
-                    currentIndex: 2,
-                    onTap: (index) => _onNavTap('organization', index),
-                  ),
+          bottomNavigationBar: role == 'student'
+              ? StudentNavbar(
+            currentIndex: 2,
+            onTap: (index) => _onNavTap('student', index),
+          )
+              : OrganizationNavbar(
+            currentIndex: 2,
+            onTap: (index) => _onNavTap('organization', index),
+          ),
         );
       },
     );

@@ -21,6 +21,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      // Navigate to login screen after logout
+      Navigator.of(context).pushReplacementNamed('/login');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Logout failed: $e")),
+      );
+    }
+  }
+
   void _onNavTap(int index) {
     if (index == 0) return;
 
@@ -94,10 +107,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             if (orgId != null)
               StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('opportunities')
-                    .where('ownerId', isEqualTo: orgId)
-                    .snapshots(),
+                stream:
+                    _firestore
+                        .collection('opportunities')
+                        .where('ownerId', isEqualTo: orgId)
+                        .snapshots(),
                 builder: (context, postSnap) {
                   if (postSnap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -115,7 +129,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          _buildStatCard('Posts', postsCount.toString(), primaryColor),
+                          _buildStatCard(
+                            'Posts',
+                            postsCount.toString(),
+                            primaryColor,
+                          ),
                           const SizedBox(width: 12),
                           _buildStatCard('Applications', "0", Colors.green),
                           const SizedBox(width: 12),
@@ -126,10 +144,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
 
                   return StreamBuilder<QuerySnapshot>(
-                    stream: _firestore
-                        .collection('applications')
-                        .where('orgId', isEqualTo: orgId)
-                        .snapshots(),
+                    stream:
+                        _firestore
+                            .collection('applications')
+                            .where('orgId', isEqualTo: orgId)
+                            .snapshots(),
                     builder: (context, appSnap) {
                       if (appSnap.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -141,17 +160,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final applications = appSnap.data?.docs ?? [];
                       final applicationsCount = applications.length;
                       final pendingCount =
-                          applications.where((doc) => doc['status'] == 'pending').length;
+                          applications
+                              .where((doc) => doc['status'] == 'pending')
+                              .length;
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
-                            _buildStatCard('Posts', postsCount.toString(), primaryColor),
+                            _buildStatCard(
+                              'Posts',
+                              postsCount.toString(),
+                              primaryColor,
+                            ),
                             const SizedBox(width: 12),
-                            _buildStatCard('Applications', applicationsCount.toString(), Colors.green),
+                            _buildStatCard(
+                              'Applications',
+                              applicationsCount.toString(),
+                              Colors.green,
+                            ),
                             const SizedBox(width: 12),
-                            _buildStatCard('Pending', pendingCount.toString(), Colors.orange),
+                            _buildStatCard(
+                              'Pending',
+                              pendingCount.toString(),
+                              Colors.orange,
+                            ),
                           ],
                         ),
                       );
@@ -211,7 +244,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: OrganizationNavbar(currentIndex: 0, onTap: _onNavTap),
+      bottomNavigationBar: OrganizationNavbar(
+        currentIndex: 0,
+        onTap: _onNavTap,
+      ),
     );
   }
 
@@ -250,10 +286,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await _firestore.collection('opportunities').doc(oppId).delete();
 
         // Delete related applications
-        final apps = await _firestore
-            .collection('applications')
-            .where('opportunityId', isEqualTo: oppId)
-            .get();
+        final apps =
+            await _firestore
+                .collection('applications')
+                .where('opportunityId', isEqualTo: oppId)
+                .get();
         for (var doc in apps.docs) {
           await _firestore.collection('applications').doc(doc.id).delete();
         }
@@ -262,17 +299,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SnackBar(content: Text('Opportunity deleted successfully')),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
       }
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('opportunities')
-          .where('ownerId', isEqualTo: orgId)
-          .snapshots(),
+      stream:
+          _firestore
+              .collection('opportunities')
+              .where('ownerId', isEqualTo: orgId)
+              .snapshots(),
       builder: (context, postSnap) {
         if (postSnap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -287,10 +325,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: _firestore
-              .collection('applications')
-              .where('orgId', isEqualTo: orgId)
-              .snapshots(),
+          stream:
+              _firestore
+                  .collection('applications')
+                  .where('orgId', isEqualTo: orgId)
+                  .snapshots(),
           builder: (context, appSnap) {
             if (appSnap.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -323,7 +362,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     postApps.where((app) => app['status'] == 'pending').length;
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 12,
+                  ),
                   child: ListTile(
                     title: Text(postTitle),
                     subtitle: Text(
@@ -337,21 +379,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onPressed: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirm Delete'),
-                                content: const Text(
-                                    'Are you sure you want to delete this opportunity?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text('Confirm Delete'),
+                                    content: const Text(
+                                      'Are you sure you want to delete this opportunity?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.pop(context, true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
                                   ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
                             );
 
                             if (confirm == true) {
@@ -377,88 +423,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget buildSideDrawer() {
     const Color primaryColor = Color(0xFF0A1D56);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Drawer(
-      width: MediaQuery.of(context).size.width * 0.65,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: GestureDetector(
-              onTap: () =>
-                  Navigator.pushReplacementNamed(context, '/org_profile'),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.grey.shade300,
-                    child: const Icon(Icons.business,
-                        color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Welcome!",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        "My Organization",
-                        style: TextStyle(color: Colors.blue, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ],
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final user = snapshot.data!;
+          final name = user['name'] ?? "No Name";
+          final email = user['email'] ?? "No Email";
+
+          return Column(
+            children: [
+              UserAccountsDrawerHeader(
+                decoration: const BoxDecoration(color: primaryColor),
+                currentAccountPicture: const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.business, color: Colors.grey, size: 40),
+                ),
+                accountName: Text(name),
+                accountEmail: Text(email),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(),
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.check_circle_outline),
-                  title: const Text("Accepted"),
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/org_accepted'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cancel_outlined),
-                  title: const Text("Rejected"),
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/org_rejected'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.message),
-                  title: const Text("Ask"),
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/org_chatbot'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.notifications),
-                  title: const Text("Notifications"),
-                  onTap: () => Navigator.pushReplacementNamed(
-                      context, '/org_notifications'),
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text("Logout"),
-            onTap: () => Navigator.pop(context),
-          ),
-          const SizedBox(height: 10),
-        ],
+
+              ListTile(
+                leading: const Icon(Icons.settings),
+                title: const Text('Settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Settings tapped")),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text('Favourites'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Favourites tapped")),
+                  );
+                },
+              ),
+
+              const Spacer(),
+
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Logout'),
+                onTap: _signOut,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+
 }
